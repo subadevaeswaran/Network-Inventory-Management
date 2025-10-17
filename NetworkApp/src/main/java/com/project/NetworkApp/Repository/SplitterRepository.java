@@ -1,0 +1,12 @@
+package com.project.NetworkApp.Repository;
+
+// package com.example.inventory.repository;
+
+import com.project.NetworkApp.entity.Splitter;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface SplitterRepository extends JpaRepository<Splitter, Integer> {
+    // You can add custom query methods here later if needed
+}
