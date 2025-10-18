@@ -12,7 +12,7 @@ import jakarta.persistence.EntityNotFoundException;
  * A plain utility class with static methods for mapping between
  * Customer entities and DTOs.
  */
-public final class CustomerUtility {
+public class CustomerUtility {
 
     /**
      * A private constructor to prevent this utility class from being instantiated.

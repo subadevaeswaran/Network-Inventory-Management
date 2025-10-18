@@ -4,5 +4,6 @@ public enum UserRole {
     PLANNER,
     TECHNICIAN,
     ADMIN,
-    SUPPORTAGENT
+    SUPPORTAGENT,
+    SALES_AGENT
 }
