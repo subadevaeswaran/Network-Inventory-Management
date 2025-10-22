@@ -26,6 +26,10 @@ public class Technician {
     private String contact;
     private String region;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true) // Maps to the DB column
+    private User user;
+
     @OneToMany(mappedBy = "technician", fetch = FetchType.LAZY)
     private Set<DeploymentTask> deploymentTasks;
 }

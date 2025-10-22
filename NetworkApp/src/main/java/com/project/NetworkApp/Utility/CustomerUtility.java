@@ -35,6 +35,7 @@ public class CustomerUtility {
                 customer.getId(),
                 customer.getName(),
                 customer.getAddress(),
+                customer.getCity(),
                 customer.getNeighborhood(),
                 customer.getPlan(),
                 customer.getConnectionType(),
@@ -56,6 +57,7 @@ public class CustomerUtility {
         Customer customer = new Customer();
         customer.setName(dto.name());
         customer.setAddress(dto.address());
+        customer.setCity(dto.city());
         customer.setNeighborhood(dto.neighborhood());
         customer.setPlan(dto.plan());
         customer.setConnectionType(dto.connectionType());

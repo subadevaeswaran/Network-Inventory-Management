@@ -4,6 +4,7 @@ package com.project.NetworkApp.Service;
 
 
 import com.project.NetworkApp.DTO.CustomerDTO;
+import com.project.NetworkApp.enums.CustomerStatus;
 
 import java.util.List;
 
@@ -41,6 +42,8 @@ public interface CustomerService {
      * @param id The ID of the customer to deactivate.
      */
     void deactivateCustomer(Integer id);
+
+    List<CustomerDTO> getCustomersByStatus(CustomerStatus status);
 
     // We will add update and delete methods later.
 }

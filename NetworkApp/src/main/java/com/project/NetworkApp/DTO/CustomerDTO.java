@@ -19,6 +19,7 @@ public record CustomerDTO(
         Integer id,
         String name,
         String address,
+        String city,
         String neighborhood,
         String plan,
         ConnectionType connectionType,

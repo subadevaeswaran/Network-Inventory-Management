@@ -4,6 +4,7 @@ package com.project.NetworkApp.controller;
 
 import com.project.NetworkApp.DTO.CustomerDTO;
 import com.project.NetworkApp.Service.CustomerService;
+import com.project.NetworkApp.enums.CustomerStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/customer") // Base URL for all customer-related APIs
+@CrossOrigin("http://localhost:5173")
 @RequiredArgsConstructor
 public class CustomerController {
 
@@ -74,5 +76,11 @@ public class CustomerController {
     public ResponseEntity<Void> deactivateCustomer(@PathVariable Integer id) {
         customerService.deactivateCustomer(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/by-status")
+    public ResponseEntity<List<CustomerDTO>> getCustomersByStatus(@RequestParam CustomerStatus status) {
+        List<CustomerDTO> customers = customerService.getCustomersByStatus(status);
+        return ResponseEntity.ok(customers);
     }
 }

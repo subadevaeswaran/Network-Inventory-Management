@@ -25,6 +25,9 @@ public class Headend {
     private String name;
     private String location;
 
+    @Column(name = "city", nullable = false) // Match your DB column
+    private String city;
+
     @OneToMany(mappedBy = "headend", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Fdh> fdhs;
 }

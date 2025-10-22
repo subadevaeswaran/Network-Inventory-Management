@@ -39,6 +39,11 @@ public class Customer {
     @Enumerated(EnumType.STRING)
     private CustomerStatus status;
 
+
+    @Column(nullable = false)
+    private String city;
+
+
     @Column(name = "assigned_port")
     private int assignedPort;
 

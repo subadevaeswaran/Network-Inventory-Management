@@ -7,10 +7,12 @@ package com.project.NetworkApp.Service;
  import com.project.NetworkApp.Repository.SplitterRepository;
  import com.project.NetworkApp.Utility.CustomerUtility;
  import com.project.NetworkApp.entity.Customer;
+ import com.project.NetworkApp.entity.Splitter;
  import com.project.NetworkApp.enums.CustomerStatus;
  import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,9 +20,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
-
-    private final CustomerRepository customerRepository;
-    private final SplitterRepository splitterRepository; // Still needed to pass to the utility
+    @Autowired
+    private CustomerRepository customerRepository;
+    @Autowired
+    private SplitterRepository splitterRepository; // Still needed to pass to the utility
 
     @Override
     public CustomerDTO createCustomer(CustomerDTO customerDTO) {
@@ -46,15 +49,33 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerDTO updateCustomer(Integer id, CustomerDTO customerDTO) {
-        // Ensure the customer exists before proceeding
-        if (!customerRepository.existsById(id)) {
-            throw new EntityNotFoundException("Customer not found with id: " + id);
+
+        // 1. Find the EXISTING customer from the database
+        Customer existingCustomer = customerRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Customer not found with id: " + id));
+
+        // 2. Update the fields on the EXISTING entity
+        existingCustomer.setName(customerDTO.name());
+        existingCustomer.setAddress(customerDTO.address());
+        existingCustomer.setNeighborhood(customerDTO.neighborhood());
+        existingCustomer.setPlan(customerDTO.plan());
+        existingCustomer.setConnectionType(customerDTO.connectionType());
+        existingCustomer.setStatus(customerDTO.status());
+        existingCustomer.setAssignedPort(customerDTO.assignedPort());
+
+        // 3. Update the relationships on the EXISTING entity
+        if (customerDTO.splitterId() != null) {
+            Splitter splitter = splitterRepository.findById(customerDTO.splitterId())
+                    .orElseThrow(() -> new EntityNotFoundException("Splitter not found with id: " + customerDTO.splitterId()));
+            existingCustomer.setSplitter(splitter);
+        } else {
+            existingCustomer.setSplitter(null);
         }
 
-        Customer customerToUpdate = CustomerUtility.toEntity(customerDTO, splitterRepository);
-        customerToUpdate.setId(id); // Set the ID to ensure an update, not an insert
+        // 4. Save the MODIFIED entity.
+        // This preserves the .assignedAssets collection and avoids the error.
+        Customer updatedCustomer = customerRepository.save(existingCustomer);
 
-        Customer updatedCustomer = customerRepository.save(customerToUpdate);
         return CustomerUtility.toDTO(updatedCustomer);
     }
 
@@ -64,5 +85,13 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found with id: " + id));
         customer.setStatus(CustomerStatus.INACTIVE);
         customerRepository.save(customer);
+    }
+
+    @Override
+    public List<CustomerDTO> getCustomersByStatus(CustomerStatus status) {
+        List<Customer> customers = customerRepository.findByStatus(status);
+        return customers.stream()
+                .map(CustomerUtility::toDTO)
+                .collect(Collectors.toList());
     }
 }
