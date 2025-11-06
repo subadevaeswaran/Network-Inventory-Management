@@ -5,10 +5,12 @@ package com.project.NetworkApp.controller;
 
 // ... imports ...
 import com.project.NetworkApp.DTO.CompleteTaskRequestDTO;
+import com.project.NetworkApp.DTO.DeploymentTaskCreateDTO;
 import com.project.NetworkApp.DTO.DeploymentTaskDTO;
 import com.project.NetworkApp.Service.DeploymentTaskService;
 import com.project.NetworkApp.enums.TaskStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +38,21 @@ public class DeploymentTaskController {
             @RequestBody CompleteTaskRequestDTO completionDetails) { // Get details from request body
         taskService.completeTask(taskId, completionDetails); // Call the service method
         return ResponseEntity.ok().build(); // Return 200 OK on success
+    }
+
+    @GetMapping
+    public ResponseEntity<List<DeploymentTaskDTO>> getAllTasks(
+            // Make 'status' optional. If not provided, it will be null.
+            @RequestParam(required = false) TaskStatus status
+    ) {
+        List<DeploymentTaskDTO> tasks = taskService.getAllTasks(status);
+        return ResponseEntity.ok(tasks);
+    }
+
+    @PostMapping
+    public ResponseEntity<DeploymentTaskDTO> createDeploymentTask(@RequestBody DeploymentTaskCreateDTO dto) {
+        DeploymentTaskDTO createdTask = taskService.createDeploymentTask(dto);
+        return new ResponseEntity<>(createdTask, HttpStatus.CREATED); // Return 201
     }
 
     // ... other methods like /complete ...

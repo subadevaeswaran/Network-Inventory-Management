@@ -26,9 +26,7 @@ const Navbar = ({ user, roles, onLogout, onRoleSwitch }) => {
         <button className="text-gray-500 md:hidden">
           <Bars3Icon className="h-6 w-6" />
         </button>
-        <h1 className="text-xl font-semibold text-gray-800 hidden md:block">
-          Dashboard
-        </h1>
+        
       </div>
 
       {/* Right side - User Profile & Dropdown */}

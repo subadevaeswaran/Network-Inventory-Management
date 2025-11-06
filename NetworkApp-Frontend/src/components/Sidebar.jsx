@@ -7,105 +7,116 @@ import {
   ArchiveBoxIcon, // For Inventory
   TicketIcon,     // For Tasks
   ClockIcon, // <-- New Icon for In-Progress
-  CheckCircleIcon, // <-- New Icon for Completed
+  CheckCircleIcon,
+  BookOpenIcon,
+   // <-- New Icon for Completed,
 } from '@heroicons/react/24/outline';
+import { Topology } from './Topology';
+
+import { NavLink as RouterNavLink } from 'react-router-dom';
 
 // Helper component for a navigation link
-const NavLink = ({ href, icon: Icon, label, isActive = false , onClick}) => (
-  <a
-    href={href}
-    onClick={onClick}
-    className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${
-      isActive
-        ? 'text-white bg-blue-600' // Active link
-        : 'text-gray-200 hover:bg-slate-700' // Inactive link
-    }`}
+const NavLink = ({ to, icon: Icon, label, end = false }) => (
+  <RouterNavLink
+    to={to}
+    end={end} // 'end' prop ensures '/' isn't "active" for '/topology'
+    // 3. This 'className' function is how NavLink handles active state
+    className={({ isActive }) =>
+      `flex items-center px-3 py-2 text-base font-medium rounded-md ${
+        isActive
+          ? 'text-white bg-blue-600' // Active link
+          : 'text-gray-200 hover:bg-slate-700' // Inactive link
+      }`
+    }
   >
     <Icon className="h-6 w-6 mr-3" />
     {label}
-  </a>
+  </RouterNavLink>
 );
 
-// --- 1. Sidebar for SALES_AGENT ---
-// (Simple: just customers)
+// --- 1. SalesAgentSidebar (No changes needed, but 'to' is better) ---
 const SalesAgentSidebar = () => (
   <nav className="flex-1 mt-6 px-4 space-y-1">
-    <NavLink href="#customers" icon={UsersIcon} label="My Customers" isActive={true} />
+    {/* Use 'to="/"' and 'end' for the index route */}
+    <NavLink to="/" icon={UsersIcon} label="My Customers" end />
   </nav>
 );
 
-// --- 2. Sidebar for PLANNER (Reconstructed) ---
-// (Powerful: controls the main workflow)
+// --- 2. PlannerSidebar (Updated) ---
 const PlannerSidebar = () => (
   <nav className="flex-1 mt-6 px-4 space-y-1">
-    <NavLink href="#dashboard" icon={ChartPieIcon} label="Task" isActive={true} />
-    <NavLink href="#topology" icon={GlobeAltIcon} label="Network Topology" />
-    <NavLink href="#inventory" icon={ArchiveBoxIcon} label="Asset Inventory" />
-    <NavLink href="#tasks" icon={TicketIcon} label="Deployment Tasks" />
-    <NavLink href="#customers" icon={UsersIcon} label="All Customers" />
+    {/* Use 'to' prop, remove 'href' and 'onClick' */}
+    <NavLink to="/" icon={ChartPieIcon} label="Task" end />
+    <NavLink to="/topology" icon={GlobeAltIcon} label="Network Topology" />
+    <NavLink to="/inventory" icon={ArchiveBoxIcon} label="Asset Inventory" />
+    <NavLink to="/tasks" icon={TicketIcon} label="Deployment Tasks" />
+    <NavLink to="/customers" icon={UsersIcon} label="All Customers" />
   </nav>
 );
 
-// --- 3. Sidebar for TECHNICIAN ---
-// (Based on Journey 1: "Land on 'My Tasks' dashboard")
-const TechnicianSidebar = ({ activeView, setActiveView }) => ( // Accept props
+// --- 3. TechnicianSidebar (Updated) ---
+// 4. It no longer needs activeView or setActiveView props
+const TechnicianSidebar = () => (
   <nav className="flex-1 mt-6 px-4 space-y-1">
     <NavLink
-      href="#tasks/scheduled"
+      to="/" // This is the 'index' route
       icon={TicketIcon}
       label="Scheduled Tasks"
-      isActive={activeView === 'SCHEDULED'}
-      onClick={(e) => { e.preventDefault(); setActiveView('SCHEDULED'); }} // Set active view
+      end // 'end' is important here
     />
     <NavLink
-      href="#tasks/inprogress"
+      to="/inprogress" // This path matches App.jsx
       icon={ClockIcon}
       label="In-Progress Tasks"
-      isActive={activeView === 'INPROGRESS'}
-      onClick={(e) => { e.preventDefault(); setActiveView('INPROGRESS'); }} // Set active view
     />
     <NavLink
-      href="#tasks/completed"
+      to="/completed" // This path matches App.jsx
       icon={CheckCircleIcon}
       label="Completed Tasks"
-      isActive={activeView === 'COMPLETED'}
-      onClick={(e) => { e.preventDefault(); setActiveView('COMPLETED'); }} // Set active view
     />
-    {/* Optional: Add Inventory Lookup later */}
-    {/* <NavLink href="#inventory" icon={ArchiveBoxIcon} label="Look Up Asset" /> */}
+    <NavLink to="/report"
+    icon={CheckCircleIcon}
+    label="Report Device" />
   </nav>
 );
 
-// --- 4. Sidebar for ADMIN ---
-// (Has access to everything, plus user/log management later)
+// --- 4. AdminSidebar (Updated) ---
+// 5. It no longer needs activeView or setActiveView props
 const AdminSidebar = () => (
   <nav className="flex-1 mt-6 px-4 space-y-1">
-    <NavLink href="#dashboard" icon={ChartPieIcon} label="Main Dashboard" isActive={true} />
-    <NavLink href="#topology" icon={GlobeAltIcon} label="Network Topology" />
-    <NavLink href="#inventory" icon={ArchiveBoxIcon} label="Asset Inventory" />
-    <NavLink href="#tasks" icon={TicketIcon} label="All Tasks" />
-    <NavLink href="#customers" icon={UsersIcon} label="All Customers" />
-    {/* We will add "User Management" and "Audit Logs" here later */}
+    <NavLink to="/" icon={ChartPieIcon} label="Main Dashboard" end />
+    <NavLink to="/admin/topology" icon={GlobeAltIcon} label="Network Topology" />
+    <NavLink to="/admin/inventory" icon={ArchiveBoxIcon} label="Asset Inventory" />
+    <NavLink to="/admin/tasks" icon={TicketIcon} label="All Tasks" />
+    <NavLink to="/admin/customers" icon={UsersIcon} label="All Customers" />
+    <NavLink to="/admin/auditlogs" icon={BookOpenIcon} label="Audit Logs" />
+    <NavLink to="/admin/users" icon={UsersIcon} label="User Management" />
+  </nav>
+);
+
+// --- 5. SupportAgentSidebar (Updated) ---
+const SupportAgentSidebar = () => (
+  <nav className="flex-1 mt-6 px-4 space-y-1">
+    <NavLink to="/" icon={ChartPieIcon} label="Support Tools" end />
   </nav>
 );
 
 
 // --- Main Sidebar Component (Handles Role Switching) ---
-const Sidebar = ({ currentUserRole, activeView, setActiveView }) => {
+const Sidebar = ({ currentUserRole }) => {
 
   const renderNavLinks = () => {
     switch (currentUserRole) {
       case 'SALES_AGENT':
         return <SalesAgentSidebar />;
       case 'PLANNER':
-        // Pass activeView/setActiveView if Planner needs similar functionality
-        return <PlannerSidebar /* activeView={activeView} setActiveView={setActiveView} */ />;
+        return <PlannerSidebar />;
       case 'TECHNICIAN':
-        // Pass the state and setter down
-        return <TechnicianSidebar activeView={activeView} setActiveView={setActiveView} />;
+        return <TechnicianSidebar />;
       case 'ADMIN':
-        // Pass activeView/setActiveView if Admin needs similar functionality
-        return <AdminSidebar /* activeView={activeView} setActiveView={setActiveView} */ />;
+        return <AdminSidebar />;
+      case 'SUPPORTAGENT':
+        return <SupportAgentSidebar />;
       default:
         return <nav className="flex-1 mt-6 px-4"><p>No links configured.</p></nav>;
     }
@@ -123,7 +134,7 @@ const Sidebar = ({ currentUserRole, activeView, setActiveView }) => {
 
       {/* Sidebar Footer */}
       <div className="p-4 border-t border-slate-700">
-        <NavLink href="#settings" icon={CogIcon} label="Settings" />
+        <NavLink to="/settings" icon={CogIcon} label="Settings" />
       </div>
     </div>
   );

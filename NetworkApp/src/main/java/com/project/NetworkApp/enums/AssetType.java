@@ -5,5 +5,7 @@ public enum AssetType {
     ROUTER,
     SWITCH,
     CPE,
-    FIBERROLL
+    FIBERROLL,
+    FDH,
+    SPLITTER
 }

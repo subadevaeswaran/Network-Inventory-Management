@@ -37,4 +37,7 @@ public class DeploymentTask {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "technician_id")
     private Technician technician;
+
+    @Column(name = "priority", length = 20)
+    private String priority;
 }

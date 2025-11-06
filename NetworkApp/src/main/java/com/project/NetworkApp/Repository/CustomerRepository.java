@@ -11,9 +11,13 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer> {
 
     List<Customer> findByNeighborhood(String neighborhood);
 
+    List<Customer> findByCity(String city);
+    List<Customer> findByCityAndStatus(String city, CustomerStatus status);
 
-
+    long countBySplitter_Id(Integer splitterId);
 
     List<Customer> findByStatus(CustomerStatus status);
+
+    List<Customer> findBySplitter_IdOrderByAssignedPortAsc(Integer splitterId);
 
 }

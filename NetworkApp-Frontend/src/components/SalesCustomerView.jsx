@@ -19,7 +19,7 @@ import apiClient from '../api/apiClient';
 //   { id: 3, name: 'Acme Corp', address: '789 Business Pl', plan: 'Business 500', status: 'ACTIVE' },
 // ];
 
-const SalesCustomerView = () => {
+const SalesCustomerView = ({user}) => {
     const [customers, setCustomers] = useState([]); // Start with empty array
   const [isModalOpen, setIsModalOpen] = useState(false); 
   const [customerToEdit, setCustomerToEdit] = useState(null);
@@ -145,6 +145,7 @@ const SalesCustomerView = () => {
         isOpen={isModalOpen}
         onRequestClose={handleModalClose} // Use the new close handler
         customerToEdit={customerToEdit}
+        user={user}
       />
     </div>
   );

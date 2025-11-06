@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface TechnicianService {
     // Modify to accept an optional region
-    List<Technician> getTechnicians(String region);
+    List<TechnicianDTO> getTechnicians(String region);
 
     public Optional<TechnicianDTO> getTechnicianByUserId(Integer userId);
 }

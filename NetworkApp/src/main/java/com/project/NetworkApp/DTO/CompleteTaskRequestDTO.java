@@ -8,5 +8,6 @@ package com.project.NetworkApp.DTO;
 public record CompleteTaskRequestDTO(
         Integer ontAssetId,      // ID of the ONT Asset being assigned
         Integer routerAssetId,   // ID of the Router Asset being assigned
-        String completionNotes   // Optional notes from the technician
+        String completionNotes,
+        Integer operatorId
 ) {}

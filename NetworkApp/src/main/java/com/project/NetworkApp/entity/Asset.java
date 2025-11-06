@@ -42,6 +42,9 @@ public class Asset {
     private Integer assignedToCustomerId;
     private LocalDateTime assignedDate;
 
+    @Column(name = "related_entity_id", nullable = true) // Column to store FDH/Splitter ID
+    private Integer relatedEntityId;
+
     @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<AssignedAssets> assignments;
 }

@@ -1,11 +1,11 @@
 // src/components/PlannerDashboard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useCallback} from 'react';
 import apiClient from '../api/apiClient';
 import { toast } from 'react-toastify';
 import { UserCircleIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/solid';
 import AssignNetworkModal from './AssignNetworkModal';
 
-const PlannerDashboard = () => {
+const PlannerDashboard = ({user}) => {
   const [pendingCustomers, setPendingCustomers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,30 +19,35 @@ const PlannerDashboard = () => {
     setIsModalOpen(true);
   };
 
-  const handleModalClose = () => {
+ 
+ const fetchPendingCustomers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Call your new endpoint
+      const response = await apiClient.get('/customer/by-status?status=PENDING');
+      setPendingCustomers(response.data);
+    } catch (error) {
+      toast.error("Could not fetch pending customers.");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // The dependency array is empty, so this function is created once.
+
+  // --- FIX 2: useEffect now just *calls* the function on mount ---
+  useEffect(() => {
+    fetchPendingCustomers();
+  }, [fetchPendingCustomers]);
+  
+
+   const handleModalClose = () => {
     setIsModalOpen(false);
     setSelectedCustomer(null);
     // Optionally, refetch the list
     // fetchPendingCustomers();
+    fetchPendingCustomers();
   };
 
-  useEffect(() => {
-    const fetchPendingCustomers = async () => {
-      setIsLoading(true);
-      try {
-        // Call your new endpoint
-        const response = await apiClient.get('/customer/by-status?status=PENDING');
-        setPendingCustomers(response.data);
-      } catch (error) {
-        toast.error("Could not fetch pending customers.");
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPendingCustomers();
-  }, []);
 
   return (
     <div>
@@ -102,6 +107,7 @@ const PlannerDashboard = () => {
           isOpen={isModalOpen}
           onRequestClose={handleModalClose}
           customer={selectedCustomer}
+          user={user}
         />
       )}
     </div>

@@ -34,4 +34,7 @@ public class User {
     private UserRole role;
 
     private LocalDateTime lastLogin;
+
+    @Column(unique = true, nullable = false) // Add this
+    private String email;
 }

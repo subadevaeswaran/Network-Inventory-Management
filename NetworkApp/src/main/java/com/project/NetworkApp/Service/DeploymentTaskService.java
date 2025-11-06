@@ -5,6 +5,7 @@ package com.project.NetworkApp.Service;
 
 
 import com.project.NetworkApp.DTO.CompleteTaskRequestDTO;
+import com.project.NetworkApp.DTO.DeploymentTaskCreateDTO;
 import com.project.NetworkApp.DTO.DeploymentTaskDTO;
 import com.project.NetworkApp.enums.TaskStatus;
 import java.util.List;
@@ -25,6 +26,10 @@ public interface DeploymentTaskService {
      * @param completionDetails DTO containing asset IDs and notes.
      */
     void completeTask(Integer taskId, CompleteTaskRequestDTO completionDetails);
+
+    List<DeploymentTaskDTO> getAllTasks(TaskStatus status);
+
+    DeploymentTaskDTO createDeploymentTask(DeploymentTaskCreateDTO dto);
 
     // Add other methods later if needed (e.g., updateTaskStatusToInProgress)
 }

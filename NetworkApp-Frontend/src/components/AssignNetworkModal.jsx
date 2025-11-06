@@ -7,7 +7,7 @@ import { XMarkIcon, ChevronUpDownIcon, CheckIcon } from '@heroicons/react/24/sol
 
 Modal.setAppElement('#root');
 
-const AssignNetworkModal = ({ isOpen, onRequestClose, customer }) => {
+const AssignNetworkModal = ({ isOpen, onRequestClose, customer , user }) => {
   // Lists for dropdowns
   const [fdhList, setFdhList] = useState([]);
   const [splitterList, setSplitterList] = useState([]);
@@ -30,7 +30,7 @@ useEffect(() => {
       const fetchNeighborhoods = async () => {
         try {
           // Use the existing endpoint that gets all distinct regions
-          const response = await apiClient.get('/fdh/regions');
+          const response = await apiClient.get(`/fdh/regions-by-city?city=${customer.city}`);
           setNeighborhoodList(response.data);
           // Clear dependent selections
           setSelectedNeighborhood('');
@@ -46,11 +46,11 @@ useEffect(() => {
   }, [isOpen]);
   // --- 2. Fetch FDHs when Neighborhood is selected ---
   useEffect(() => {
-    if (selectedNeighborhood) {
+    if (selectedNeighborhood && customer?.city) {
       const fetchFdhs = async () => {
         try {
           // Call the NEW endpoint
-          const response = await apiClient.get(`/fdh/by-region?region=${selectedNeighborhood}`);
+          const response = await apiClient.get(`/fdh/by-region?city=${customer.city}&region=${selectedNeighborhood}`);
           setFdhList(response.data);
           // Clear dependent selections
           setSelectedFdh(null);
@@ -70,6 +70,7 @@ useEffect(() => {
     if (selectedFdh) {
       const fetchSplitters = async () => {
         try {
+          console.log(selectedFdh.id);
           const response = await apiClient.get(`/splitters/by-fdh?fdhId=${selectedFdh.id}`);
           setSplitterList(response.data);
            // Clear dependent selections when splitters reload
@@ -115,7 +116,8 @@ useEffect(() => {
         // The neighborhood comes *from* the selected FDH
         neighborhood: selectedNeighborhood,
         fiberLengthMeters: parseFloat(fiberLength),
-        technicianId: selectedTechnician?.id
+        technicianId: selectedTechnician?.id,
+        operatorId: user.id
     };
     try {
       // **Call the backend endpoint**

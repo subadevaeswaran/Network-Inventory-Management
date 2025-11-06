@@ -2,6 +2,8 @@ package com.project.NetworkApp.Service;
 
 // package com.project.NetworkApp.service;
 
+import com.project.NetworkApp.DTO.FdhCreateDTO;
+import com.project.NetworkApp.DTO.FdhResponseDTO;
 import com.project.NetworkApp.entity.Fdh;
 
 import java.util.List;
@@ -11,7 +13,11 @@ public interface FdhService {
 
     List<String> getRegionsByCity(String city);
 
-    List<Fdh> getFdhsByCity(String city);
+    List<FdhResponseDTO> getFdhsByCity(String city);
 
     List<Fdh> getFdhsByRegion(String region);
+
+    FdhResponseDTO createFdh(FdhCreateDTO fdhCreateDTO);
+
+    List<Fdh> getFdhsByCityAndRegion(String city, String region);
 }

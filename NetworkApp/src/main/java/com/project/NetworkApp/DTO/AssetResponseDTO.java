@@ -17,6 +17,7 @@ public record AssetResponseDTO(
         AssetStatus status,
         String location,
         Integer assignedToCustomerId,
-        LocalDateTime assignedDate
+        LocalDateTime assignedDate,
+        Integer relatedEntityId
 ) {
 }

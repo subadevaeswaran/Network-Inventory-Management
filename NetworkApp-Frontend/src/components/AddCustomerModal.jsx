@@ -13,7 +13,7 @@ const plans = ['500 Mbps Fiber', '1 Gbps Fiber', 'Business 500'];
 const connectionTypes = ['WIRED', 'WIRELESS'];
 // const statuses = ['PENDING', 'ACTIVE']; // This wasn't used, so I'll remove it for clarity
 
-const AddCustomerModal = ({ isOpen, onRequestClose, customerToEdit }) => {
+const AddCustomerModal = ({ isOpen, onRequestClose, customerToEdit, user }) => {
     const isEditMode = customerToEdit != null;
   // Form state
   const [name, setName] = useState('');
@@ -93,6 +93,7 @@ const AddCustomerModal = ({ isOpen, onRequestClose, customerToEdit }) => {
       status: isEditMode ? customerToEdit.status : 'PENDING', // Keep status in edit mode
       assignedPort: isEditMode ? customerToEdit.assignedPort : 0,
       splitterId: isEditMode ? customerToEdit.splitterId : null,
+      operatorId: user.id
     };
     console.log("Sending Customer Data:", customerData);
 

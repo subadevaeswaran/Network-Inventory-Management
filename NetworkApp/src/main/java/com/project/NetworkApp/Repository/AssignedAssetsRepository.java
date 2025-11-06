@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository interface for the AssignedAssets join table entity.
@@ -18,4 +19,6 @@ public interface AssignedAssetsRepository extends JpaRepository<AssignedAssets, 
     // List<AssignedAssets> findByCustomerId(Integer customerId);
     // List<AssignedAssets> findByAssetId(Integer assetId);
     List<AssignedAssets> findByCustomer_Id(Integer customerId);
+
+    Optional<AssignedAssets> findByAsset_Id(Integer assetId);
 }

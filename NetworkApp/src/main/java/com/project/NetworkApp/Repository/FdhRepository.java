@@ -23,4 +23,9 @@ public interface FdhRepository extends JpaRepository<Fdh, Integer> {
     List<Fdh> findByHeadendCity(String city);
 
     List<Fdh> findByRegion(String region);
+
+    List<Fdh> findByHeadend_City(String city);
+
+    List<Fdh> findByHeadend_CityAndRegion(String city, String region);
+    List<Fdh> findByHeadendId(Integer headendId);
 }

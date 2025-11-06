@@ -5,7 +5,7 @@ import { ListBulletIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/
 import TaskDetailsModal from './TaskDetailsModal'; // Ensure this is created/imported
 
 // Accepts technicianId and activeView (status) from App.js
-const TechnicianDashboard = ({ technicianId, activeView }) => {
+const TechnicianDashboard = ({ technicianId, activeView , user }) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -130,6 +130,7 @@ const TechnicianDashboard = ({ technicianId, activeView }) => {
               isOpen={isModalOpen}
               onRequestClose={handleModalClose}
               task={selectedTask} // Pass the full task object
+              user={user}
           />
       )}
     </div>

@@ -72,15 +72,29 @@ public class CustomerController {
      * Deactivates a customer (soft delete).
      * Corresponds to SRS 2.1 and US 5.1.
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deactivateCustomer(@PathVariable Integer id) {
-        customerService.deactivateCustomer(id);
-        return ResponseEntity.noContent().build();
-    }
+
 
     @GetMapping("/by-status")
     public ResponseEntity<List<CustomerDTO>> getCustomersByStatus(@RequestParam CustomerStatus status) {
         List<CustomerDTO> customers = customerService.getCustomersByStatus(status);
         return ResponseEntity.ok(customers);
+    }
+
+    @GetMapping("/cs")
+    public ResponseEntity<List<CustomerDTO>> getCustomers(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) CustomerStatus status
+    ) {
+        // Pass filters (which can be null) to the service
+        List<CustomerDTO> customers = customerService.getCustomers(city, status);
+        return ResponseEntity.ok(customers);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deactivateCustomer(@PathVariable Integer id,
+                                                   @RequestParam Integer operatorId) {
+        // No @RequestParam needed
+        customerService.deactivateCustomer(id,operatorId);
+        return ResponseEntity.noContent().build();
     }
 }

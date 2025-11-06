@@ -33,11 +33,13 @@ public final class DeploymentTaskUtility {
 
         return new DeploymentTaskDTO(
                 task.getId(),
-                customer != null ? customer.getId() : null, // Safely get customer ID
-                customer != null ? customer.getName() : "N/A", // Safely get customer name
-                customer != null ? customer.getAddress() : "N/A", // Safely get customer address
-                technician != null ? technician.getId() : null, // Safely get technician ID
+                customer != null ? customer.getId() : null,
+                customer != null ? customer.getName() : "N/A",
+                customer != null ? customer.getAddress() : "N/A",
+                technician != null ? technician.getId() : null,
+                technician != null ? technician.getName() : "Unassigned", // <-- ADD THIS
                 task.getStatus(),
+                task.getPriority(), // <-- ADD THIS
                 task.getScheduledDate(),
                 task.getNotes()
         );

@@ -21,7 +21,7 @@ public class TechnicianController {
     private final TechnicianService technicianService;
 
     @GetMapping
-    public ResponseEntity<List<Technician>> getTechnicians(
+    public ResponseEntity<List<TechnicianDTO>> getTechnicians(
             // Make region optional
             @RequestParam(required = false) String region) {
         return ResponseEntity.ok(technicianService.getTechnicians(region));

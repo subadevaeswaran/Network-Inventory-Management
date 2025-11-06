@@ -41,9 +41,13 @@ public interface CustomerService {
      * Deactivates a customer (sets their status to INACTIVE).
      * @param id The ID of the customer to deactivate.
      */
-    void deactivateCustomer(Integer id);
+    void deactivateCustomer(Integer id ,Integer operatorId);
 
     List<CustomerDTO> getCustomersByStatus(CustomerStatus status);
+
+    List<CustomerDTO> getCustomers(String city, CustomerStatus status);
+
+
 
     // We will add update and delete methods later.
 }

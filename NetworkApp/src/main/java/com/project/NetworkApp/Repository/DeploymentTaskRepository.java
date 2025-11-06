@@ -6,6 +6,7 @@ import com.project.NetworkApp.entity.DeploymentTask;
 import com.project.NetworkApp.enums.TaskStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Sort; // <-- Import Sort
 
 import java.util.List;
 
@@ -15,4 +16,10 @@ public interface DeploymentTaskRepository extends JpaRepository<DeploymentTask, 
     // --- End Fix ---
 
     List<DeploymentTask> findByTechnicianId(Integer technicianId); // Keep
+
+    long countByStatus(TaskStatus status);
+    // Method to count tasks by multiple statuses
+    long countByStatusIn(List<TaskStatus> statuses);
+
+    List<DeploymentTask> findByStatus(TaskStatus status, Sort sort);
 }

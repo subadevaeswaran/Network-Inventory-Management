@@ -14,4 +14,6 @@ public interface HeadendRepository extends JpaRepository<Headend, Integer> {
 
     @Query("SELECT DISTINCT h.city FROM Headend h WHERE h.city IS NOT NULL")
     List<String> findDistinctCities();
+
+    List<Headend> findByCity(String city);
 }

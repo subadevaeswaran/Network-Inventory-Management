@@ -44,7 +44,7 @@ function CustomSelect({ label, data = [], selected, onChange, displayKey, disabl
 // ----- End of CustomSelect -----
 
 
-const TaskDetailsModal = ({ isOpen, onRequestClose, task }) => {
+const TaskDetailsModal = ({ isOpen, onRequestClose, task, user }) => {
     const [availableOnts, setAvailableOnts] = useState([]);
     const [availableRouters, setAvailableRouters] = useState([]);
     const [selectedOnt, setSelectedOnt] = useState(null);
@@ -145,7 +145,8 @@ const TaskDetailsModal = ({ isOpen, onRequestClose, task }) => {
         const completionData = {
             ontAssetId: selectedOnt.id,
             routerAssetId: selectedRouter.id,
-            completionNotes: completionNotes
+            completionNotes: completionNotes,
+            operatorId:user.id
         };
 
         try {

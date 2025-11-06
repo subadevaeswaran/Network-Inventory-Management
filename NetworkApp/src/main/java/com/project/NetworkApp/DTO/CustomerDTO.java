@@ -29,6 +29,9 @@ public record CustomerDTO(
 
         // We include the ID of the related entity, not the whole object.
         // This is a best practice for clean APIs.
-        Integer splitterId
+        Integer splitterId,
+        String splitterModel, // <-- ADD THIS
+        String fdhName ,
+        Integer operatorId
 ) {
 }

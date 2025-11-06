@@ -33,7 +33,8 @@ public final class AssetUtility {
                 asset.getStatus(),
                 asset.getLocation(),
                 asset.getAssignedToCustomerId(),
-                asset.getAssignedDate()
+                asset.getAssignedDate(),
+                asset.getRelatedEntityId()
         );
     }
 

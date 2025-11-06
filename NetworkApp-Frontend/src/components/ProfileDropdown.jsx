@@ -43,17 +43,6 @@ const ProfileDropdown = ({ roles, onLogout, onRoleSwitch, onClose }) => {
       {/* Divider */}
       <div className="border-t border-gray-100"></div>
 
-      {/* Other Options */}
-      <div className="p-2">
-        <button className="w-full text-left flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-blue-50">
-          <UserCircleIcon className="h-5 w-5 mr-3 text-gray-500" />
-          My Profile
-        </button>
-        <button className="w-full text-left flex items-center px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-blue-50">
-          <CogIcon className="h-5 w-5 mr-3 text-gray-500" />
-          Settings
-        </button>
-      </div>
 
       {/* Divider */}
       <div className="border-t border-gray-100"></div>

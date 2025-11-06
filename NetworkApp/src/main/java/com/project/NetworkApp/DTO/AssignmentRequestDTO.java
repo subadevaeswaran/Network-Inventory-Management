@@ -8,6 +8,7 @@ public record AssignmentRequestDTO(
         int port,
         String neighborhood,
         BigDecimal fiberLengthMeters,// We'll update the customer with this
-        Integer technicianId
+        Integer technicianId,
+        Integer operatorId
 ) {
 }

@@ -5,6 +5,7 @@ package com.project.NetworkApp.Utility;
 import com.project.NetworkApp.DTO.CustomerDTO;
 import com.project.NetworkApp.Repository.SplitterRepository;
 import com.project.NetworkApp.entity.Customer;
+import com.project.NetworkApp.entity.Fdh;
 import com.project.NetworkApp.entity.Splitter;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -30,6 +31,17 @@ public class CustomerUtility {
         if (customer == null) {
             return null;
         }
+        String splitterModel = null;
+        String fdhName = null;
+
+        Splitter splitter = customer.getSplitter();
+        if (splitter != null) {
+            splitterModel = splitter.getModel(); // Get splitter model
+            Fdh fdh = splitter.getFdh();
+            if (fdh != null) {
+                fdhName = fdh.getName(); // Get FDH name
+            }
+        }
 
         return new CustomerDTO(
                 customer.getId(),
@@ -42,7 +54,11 @@ public class CustomerUtility {
                 customer.getStatus(),
                 customer.getAssignedPort(),
                 customer.getCreatedAt(),
-                customer.getSplitter() != null ? customer.getSplitter().getId() : null
+                customer.getSplitter() != null ? customer.getSplitter().getId() : null,
+                splitterModel, // <-- Pass new data
+                fdhName,
+                null
+
         );
     }
 

@@ -5,18 +5,17 @@ package com.project.NetworkApp.Service;
 import com.project.NetworkApp.DTO.AssignmentRequestDTO;
 import com.project.NetworkApp.Repository.*;
 import com.project.NetworkApp.entity.*;
-import com.project.NetworkApp.enums.CustomerStatus;
-import com.project.NetworkApp.enums.TaskStatus;
+import com.project.NetworkApp.enums.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Important for multiple updates
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 // package com.project.NetworkApp.service;
 
 // ... other imports
-import com.project.NetworkApp.enums.FiberLineStatus; // Import FiberLineStatus
 
 // package com.project.NetworkApp.service;
 
@@ -32,6 +31,8 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final DeploymentTaskRepository deploymentTaskRepository;
     private final FiberDropLineRepository fiberDropLineRepository;
     private final TechnicianRepository technicianRepository;
+    private final AssetRepository assetRepository;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -46,6 +47,38 @@ public class AssignmentServiceImpl implements AssignmentService {
         // 2. Find Splitter
         Splitter splitter = splitterRepository.findById(dto.splitterId())
                 .orElseThrow(() -> new EntityNotFoundException("Splitter not found: " + dto.splitterId()));
+        Asset splitterAsset = assetRepository.findByAssetTypeAndRelatedEntityId(AssetType.SPLITTER, splitter.getId())
+                .orElse(null);
+
+
+        if (splitterAsset != null) {
+            if (splitterAsset.getStatus() == AssetStatus.AVAILABLE) {
+                splitterAsset.setAssignedToCustomerId(customer.getId());
+                splitterAsset.setAssignedDate(LocalDateTime.now());
+                splitterAsset.setStatus(AssetStatus.ASSIGNED);
+                assetRepository.save(splitterAsset); // Update status if needed
+                System.out.println(">>> Updated Splitter Asset " + splitterAsset.getId() + " status to ASSIGNED.");
+            }
+        } else {
+            System.err.println("Warning: Could not find Asset record for Splitter ID: " + splitter.getId());
+        }
+        Fdh parentFdh = splitter.getFdh();
+        if (parentFdh != null) {
+            Asset fdhAsset = assetRepository.findByAssetTypeAndRelatedEntityId(AssetType.FDH, parentFdh.getId())
+                    .orElse(null); // Find the corresponding Asset record for the FDH
+
+            if (fdhAsset != null) {
+                if (fdhAsset.getStatus() == AssetStatus.AVAILABLE) {
+                    fdhAsset.setAssignedToCustomerId(customer.getId());
+                    fdhAsset.setAssignedDate(LocalDateTime.now());
+                    fdhAsset.setStatus(AssetStatus.ASSIGNED);
+                    assetRepository.save(fdhAsset); // Update status if needed
+                    System.out.println(">>> Updated FDH Asset " + fdhAsset.getId() + " status to ASSIGNED.");
+                }
+            } else {
+                System.err.println("Warning: Could not find Asset record for FDH ID: " + parentFdh.getId());
+            }
+        }
 
         Technician technician = technicianRepository.findById(dto.technicianId())
                 .orElseThrow(() -> new EntityNotFoundException("Technician not found: " + dto.technicianId()));
@@ -87,5 +120,12 @@ public class AssignmentServiceImpl implements AssignmentService {
         newTask.setScheduledDate(LocalDate.now().plusDays(1));
         newTask.setNotes("Assign network path: Splitter " + splitter.getId() + ", Port " + dto.port() + ". Fiber Length: " + dto.fiberLengthMeters() + "m");
         deploymentTaskRepository.save(newTask);
+        Integer currentUserId = null; // Set to null
+        String description = "Assigned network path (Splitter: " + splitter.getId() +
+                ", Port: " + dto.port() +
+                ", Neighborhood: " + dto.neighborhood() +
+                ", Tech: " + technician.getName() +
+                ") to Customer '" + customer.getName() + "' (ID: " + customer.getId() + ")";
+        auditLogService.logAction("ASSIGNMENT_CREATE", description, dto.operatorId());
     }
 }

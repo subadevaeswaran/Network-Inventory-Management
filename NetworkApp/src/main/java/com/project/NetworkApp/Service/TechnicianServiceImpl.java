@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,12 +19,20 @@ public class TechnicianServiceImpl implements TechnicianService { // Ensure this
     private final TechnicianRepository technicianRepository;
 
     @Override
-    public List<Technician> getTechnicians(String region) {
+    public List<TechnicianDTO> getTechnicians(String region) {
+        List<Technician> technicians;
         if (StringUtils.hasText(region)) {
-            return technicianRepository.findByRegion(region);
+            System.out.println(">>> Service: Fetching Technicians for region: " + region); // Add log
+            technicians = technicianRepository.findByRegion(region);
         } else {
-            return technicianRepository.findAll();
+            System.out.println(">>> Service: Fetching ALL Technicians"); // Add log
+            technicians = technicianRepository.findAll();
         }
+        System.out.println(">>> Service: Found " + technicians.size() + " technicians."); // Add log
+        // Map the list of entities to a list of DTOs
+        return technicians.stream()
+                .map(TechnicianUtility::toDTO) // Use the utility mapper
+                .collect(Collectors.toList());
     }
 
     // --- FIX 1: Change return type to Optional<TechnicianDTO> ---
