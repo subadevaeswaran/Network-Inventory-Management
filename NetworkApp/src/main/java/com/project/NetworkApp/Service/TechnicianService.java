@@ -2,7 +2,7 @@ package com.project.NetworkApp.Service;
 
 
 import com.project.NetworkApp.DTO.TechnicianDTO;
-import com.project.NetworkApp.entity.Technician;
+
 import java.util.List;
 import java.util.Optional;
 

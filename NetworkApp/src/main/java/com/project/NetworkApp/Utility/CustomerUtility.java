@@ -1,6 +1,6 @@
 package com.project.NetworkApp.Utility;
 
-// package com.example.inventory.util;
+
 
 import com.project.NetworkApp.DTO.CustomerDTO;
 import com.project.NetworkApp.Repository.SplitterRepository;

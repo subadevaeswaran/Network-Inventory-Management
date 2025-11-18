@@ -1,9 +1,11 @@
 package com.project.NetworkApp.security.config;
 
+import com.project.NetworkApp.security.Constant.EndpointConstants;
+import com.project.NetworkApp.security.Constant.RoleConstants;
 import com.project.NetworkApp.security.jwt.AuthEntryPointJwt;
 import com.project.NetworkApp.security.jwt.AuthTokenFilter;
 import com.project.NetworkApp.security.service.UserDetailsServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,26 +30,20 @@ import org.springframework.context.annotation.ComponentScan;
 @Configuration
 @EnableWebSecurity
 @ComponentScan(basePackages = "com.project.NetworkApp.security")
+@RequiredArgsConstructor
 public class WebSecurityConfig {
-    @Autowired
-    private UserDetailsServiceImpl userDetailsService;
 
-    @Autowired
-    private AuthEntryPointJwt unauthorizedHandler;
+    private final UserDetailsServiceImpl userDetailsService;
 
+    private final AuthEntryPointJwt unauthorizedHandler;
 
-    @Autowired
-    private AuthTokenFilter authTokenFilter;
-
-
+    private final AuthTokenFilter authTokenFilter;
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
-
         return authProvider;
     }
 
@@ -61,39 +57,56 @@ public class WebSecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    public final static String[] PUBLIC_REQUEST_MATCHERS = { "/api/test/all","/api/v1/auth/**", "/api-docs/**", "/swagger-ui/**","/v3/api-docs/**" };
+    protected final String[] publicRequestMatching = { "/api/test/all","/api/v1/auth/**", "/api-docs/**", "/swagger-ui/**","/v3/api-docs/**" };
 
-    // In your SecurityConfig class
-    // In WebSecurityConfig.java
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth.
-                        requestMatchers(PUBLIC_REQUEST_MATCHERS).permitAll() // Public paths
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(publicRequestMatching).permitAll()
 
-                        // --- Use YOUR Roles ---
-                        .requestMatchers("/assets/**").hasAnyAuthority("ADMIN","PLANNER","TECHNICIAN")
-                        .requestMatchers("/assigned-assets/**").hasAnyAuthority("ADMIN", "SALES_AGENT", "SUPPORTAGENT" ,"TECHNICIAN")
-                        .requestMatchers("/assignments/**").hasAuthority("PLANNER")
-                        .requestMatchers("/auditlogs/**").hasAuthority("ADMIN")
-                        .requestMatchers("/customer/**").hasAnyAuthority("ADMIN","PLANNER" , "TECHNICIAN", "SALES_AGENT", "SUPPORTAGENT")
-                        .requestMatchers("/dashboard/**").hasAnyAuthority("ADMIN", "PLANNER")
-                        .requestMatchers("/tasks/**").hasAnyAuthority("ADMIN", "PLANNER", "TECHNICIAN")
-                        .requestMatchers("/fdh/**").hasAnyAuthority("ADMIN", "TECHNICIAN", "PLANNER")
-                        .requestMatchers("/headends/**").hasAnyAuthority("ADMIN", "PLANNER", "SALES_AGENT", "TECHNICIAN")
-                        .requestMatchers("/splitters/**").hasAnyAuthority("ADMIN", "PLANNER", "TECHNICIAN")
-                        .requestMatchers("/technicians/**").hasAnyAuthority("ADMIN", "PLANNER", "TECHNICIAN")
-                        .requestMatchers("/topology/**").hasAnyAuthority("ADMIN")
+                        .requestMatchers(EndpointConstants.ASSETS)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.PLANNER, RoleConstants.TECHNICIAN)
 
+                        .requestMatchers(EndpointConstants.ASSIGNED_ASSETS)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.SALES_AGENT, RoleConstants.SUPPORT_AGENT, RoleConstants.TECHNICIAN)
 
-                        // Example: Multiple roles can access a path
-                        .requestMatchers("/api/v1/auth/**").hasAnyAuthority("ADMIN", "PLANNER","TECHNICIAN", "SALES_AGENT", "SUPPORTAGENT")
+                        .requestMatchers(EndpointConstants.ASSIGNMENTS)
+                        .hasAuthority(RoleConstants.PLANNER)
 
-                        // All other requests must be authenticated
+                        .requestMatchers(EndpointConstants.AUDIT_LOGS)
+                        .hasAuthority(RoleConstants.ADMIN)
+
+                        .requestMatchers(EndpointConstants.CUSTOMER)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.PLANNER, RoleConstants.TECHNICIAN, RoleConstants.SALES_AGENT, RoleConstants.SUPPORT_AGENT)
+
+                        .requestMatchers(EndpointConstants.DASHBOARD)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.PLANNER)
+
+                        .requestMatchers(EndpointConstants.TASKS)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.PLANNER, RoleConstants.TECHNICIAN)
+
+                        .requestMatchers(EndpointConstants.FDH)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.TECHNICIAN, RoleConstants.PLANNER)
+
+                        .requestMatchers(EndpointConstants.HEADENDS)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.PLANNER, RoleConstants.SALES_AGENT, RoleConstants.TECHNICIAN)
+
+                        .requestMatchers(EndpointConstants.SPLITTERS)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.PLANNER, RoleConstants.TECHNICIAN)
+
+                        .requestMatchers(EndpointConstants.TECHNICIANS)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.PLANNER, RoleConstants.TECHNICIAN)
+
+                        .requestMatchers(EndpointConstants.TOPOLOGY)
+                        .hasAuthority(RoleConstants.ADMIN)
+
+                        .requestMatchers(EndpointConstants.AUTH)
+                        .hasAnyAuthority(RoleConstants.ADMIN, RoleConstants.PLANNER, RoleConstants.TECHNICIAN, RoleConstants.SALES_AGENT, RoleConstants.SUPPORT_AGENT)
+
                         .anyRequest().authenticated()
                 )
-                // ... rest of your config is perfect ...
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -105,21 +118,16 @@ public class WebSecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Rule 1: Allow requests from your React app's origin.
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
 
-        // Rule 2: Allow standard HTTP methods.
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
-        // Rule 3: THIS IS THE MOST IMPORTANT PART.
-        // You must explicitly allow the 'Authorization' and 'Content-Type' headers.
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
 
-        // Rule 4: Allow credentials (cookies, etc.) if needed in the future.
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply this configuration to all paths.
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }

@@ -5,15 +5,17 @@ package com.project.NetworkApp.Service;
 import com.project.NetworkApp.DTO.DeploymentTaskCreateDTO;
 import com.project.NetworkApp.DTO.DeploymentTaskDTO;
 import com.project.NetworkApp.DTO.CompleteTaskRequestDTO;
-import com.project.NetworkApp.DTO.DeploymentTaskDTO;
 import com.project.NetworkApp.Repository.*;
 import com.project.NetworkApp.entity.*;
 import com.project.NetworkApp.enums.AssetStatus;
 import com.project.NetworkApp.enums.CustomerStatus;
 import com.project.NetworkApp.enums.TaskStatus;
 import com.project.NetworkApp.Utility.DeploymentTaskUtility; // Ensure you have this utility
+import com.project.NetworkApp.exception.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,12 +35,14 @@ public class DeploymentTaskServiceImpl implements DeploymentTaskService {
     private final AuditLogService auditLogService;
     private final TechnicianRepository technicianRepository;
     private final UserRepository userRepository;
+    private static final Logger log = LoggerFactory.getLogger(DeploymentTaskServiceImpl.class);
+
 
     @Override
     public List<DeploymentTaskDTO> getTechnicianTasksByStatus(Integer technicianId, TaskStatus status) {
         List<DeploymentTask> tasks = taskRepository.findByTechnicianIdAndStatus(technicianId, status);
         // Ensure DeploymentTaskUtility exists and has the toDTO method
-        return tasks.stream().map(DeploymentTaskUtility::toDTO).collect(Collectors.toList());
+        return tasks.stream().map(DeploymentTaskUtility::toDTO).toList();
     }
 
     @Override
@@ -47,13 +50,13 @@ public class DeploymentTaskServiceImpl implements DeploymentTaskService {
     public void completeTask(Integer taskId, CompleteTaskRequestDTO dto) {
         // 1. Find the Task & associated Customer
         DeploymentTask task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
+                .orElseThrow(() -> new TechnicianNotFoundException("Task not found: " + taskId));
         Customer customer = task.getCustomer();
-        if (customer == null) throw new EntityNotFoundException("Customer not found for task: " + taskId);
+        if (customer == null) throw new CustomerStatusException("Customer not found for task: " + taskId);
 
         // Validate task status (e.g., must be SCHEDULED or INPROGRESS)
         if (task.getStatus() != TaskStatus.SCHEDULED && task.getStatus() != TaskStatus.INPROGRESS) {
-            throw new IllegalStateException("Task cannot be completed from its current status: " + task.getStatus());
+            throw new TaskNotFoundException("Task cannot be completed from its current status: " + task.getStatus());
         }
 
         // 2. Find and Validate Assets (ONT and Router must be AVAILABLE)
@@ -79,22 +82,11 @@ public class DeploymentTaskServiceImpl implements DeploymentTaskService {
         customer.setStatus(CustomerStatus.ACTIVE);
         customerRepository.save(customer); // Updates 'customers' table
 
-        Integer currentUserId = null;
-        Technician technician = task.getTechnician();
-        if (technician != null) {
-            User user = technician.getUser(); // Get the associated User
-            if (user != null) {
-                currentUserId = user.getId(); // Get the User's ID
-            } else {
-                System.err.println("Warning: Technician " + technician.getId() + " is not linked to a User account.");
-            }
-        } else {
-            System.err.println("Warning: Task " + taskId + " is not linked to a Technician.");
-        }// Set to null
+
         String description = "Completed Task ID: " + task.getId() +
-                " for Customer '" + customer.getName() + "' (ID: " + customer.getId() + "). " +
-                "Assigned ONT: " + ont.getSerialNumber() + " (ID: " + ont.getId() + "), " +
-                "Router: " + router.getSerialNumber() + " (ID: " + router.getId() + "). " +
+                " for Customer '" + customer.getName() + "' (CusID: " + customer.getId() + "). " +
+                "Assigned ONT: " + ont.getSerialNumber() + " (OntId: " + ont.getId() + "), " +
+                "Router: " + router.getSerialNumber() + " (RouterId: " + router.getId() + "). " +
                 "Notes: " + dto.completionNotes();
         auditLogService.logAction("TASK_COMPLETE", description, dto.operatorId());
 
@@ -104,12 +96,12 @@ public class DeploymentTaskServiceImpl implements DeploymentTaskService {
     // Helper to find and validate asset
     private Asset findAndValidateAsset(Integer assetId, AssetStatus expectedStatus) {
         if (assetId == null) {
-            throw new IllegalArgumentException("Asset ID cannot be null for assignment.");
+            throw new AssetIdNullException("Asset ID cannot be null for assignment.");
         }
         Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new EntityNotFoundException("Asset not found: " + assetId));
+                .orElseThrow(() -> new AssetNotFoundException("Asset not found: " + assetId));
         if (asset.getStatus() != expectedStatus) {
-            throw new IllegalStateException("Asset " + assetId + " ("+asset.getSerialNumber()+") is not in the expected status: " + expectedStatus + ", current status: " + asset.getStatus());
+            throw new AssetNotFoundException("Asset " + assetId + " ("+asset.getSerialNumber()+") is not in the expected status: " + expectedStatus + ", current status: " + asset.getStatus());
         }
         return asset;
     }
@@ -146,7 +138,7 @@ public class DeploymentTaskServiceImpl implements DeploymentTaskService {
 
         return tasks.stream()
                 .map(DeploymentTaskUtility::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -154,10 +146,10 @@ public class DeploymentTaskServiceImpl implements DeploymentTaskService {
     public DeploymentTaskDTO createDeploymentTask(DeploymentTaskCreateDTO dto) {
         // 1. Find related entities
         Customer customer = customerRepository.findById(dto.customerId())
-                .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + dto.customerId()));
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found with ID: " + dto.customerId()));
 
         Technician technician = technicianRepository.findById(dto.technicianId())
-                .orElseThrow(() -> new EntityNotFoundException("Technician not found with ID: " + dto.technicianId()));
+                .orElseThrow(() -> new TechnicianNotFoundException("Technician not found with ID: " + dto.technicianId()));
 
         // 2. Create new DeploymentTask
         DeploymentTask newTask = new DeploymentTask();

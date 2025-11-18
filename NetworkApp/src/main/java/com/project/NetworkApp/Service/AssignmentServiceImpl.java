@@ -1,26 +1,25 @@
 package com.project.NetworkApp.Service;
 
-// package com.project.NetworkApp.service;
+
 
 import com.project.NetworkApp.DTO.AssignmentRequestDTO;
 import com.project.NetworkApp.Repository.*;
 import com.project.NetworkApp.entity.*;
 import com.project.NetworkApp.enums.*;
+import com.project.NetworkApp.exception.CustomerStatusException;
+import com.project.NetworkApp.exception.InvalidPortException;
+import com.project.NetworkApp.exception.SplitterPortAssignedException;
+import com.project.NetworkApp.exception.TechnicianNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Important for multiple updates
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-// package com.project.NetworkApp.service;
 
-// ... other imports
-
-// package com.project.NetworkApp.service;
-
-// ... other imports
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +32,8 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final TechnicianRepository technicianRepository;
     private final AssetRepository assetRepository;
     private final AuditLogService auditLogService;
+    private static final Logger log = LoggerFactory.getLogger(AssignmentServiceImpl.class);
+
 
     @Override
     @Transactional
@@ -41,7 +42,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         Customer customer = customerRepository.findById(dto.customerId())
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found: " + dto.customerId()));
         if (customer.getStatus() != CustomerStatus.PENDING) {
-            throw new IllegalStateException("Customer is not in PENDING status.");
+            throw new CustomerStatusException("Customer is not in PENDING status.");
         }
 
         // 2. Find Splitter
@@ -57,10 +58,10 @@ public class AssignmentServiceImpl implements AssignmentService {
                 splitterAsset.setAssignedDate(LocalDateTime.now());
                 splitterAsset.setStatus(AssetStatus.ASSIGNED);
                 assetRepository.save(splitterAsset); // Update status if needed
-                System.out.println(">>> Updated Splitter Asset " + splitterAsset.getId() + " status to ASSIGNED.");
+                log.info("Updated Splitter Asset {} status to ASSIGNED.", splitterAsset.getId());
             }
         } else {
-            System.err.println("Warning: Could not find Asset record for Splitter ID: " + splitter.getId());
+            log.warn("Could not find Asset record for Splitter ID: {}", splitter.getId());
         }
         Fdh parentFdh = splitter.getFdh();
         if (parentFdh != null) {
@@ -73,20 +74,20 @@ public class AssignmentServiceImpl implements AssignmentService {
                     fdhAsset.setAssignedDate(LocalDateTime.now());
                     fdhAsset.setStatus(AssetStatus.ASSIGNED);
                     assetRepository.save(fdhAsset); // Update status if needed
-                    System.out.println(">>> Updated FDH Asset " + fdhAsset.getId() + " status to ASSIGNED.");
+                    log.info("Updated FDH Asset {} status to ASSIGNED.", fdhAsset.getId());
                 }
             } else {
-                System.err.println("Warning: Could not find Asset record for FDH ID: " + parentFdh.getId());
+                log.warn("Warning: Could not find Asset record for FDH ID: {}" , parentFdh.getId());
             }
         }
 
         Technician technician = technicianRepository.findById(dto.technicianId())
-                .orElseThrow(() -> new EntityNotFoundException("Technician not found: " + dto.technicianId()));
-        System.out.println("Found Technician: " + technician.getName());
+                .orElseThrow(() -> new TechnicianNotFoundException("Technician not found: " + dto.technicianId()));
+
         // --- Add Validation (Optional but Recommended) ---
         // Check if port number is valid
         if (dto.port() <= 0 || dto.port() > splitter.getPortCapacity()) {
-            throw new IllegalArgumentException("Invalid port number for splitter capacity.");
+            throw new SplitterPortAssignedException("Invalid port number for splitter capacity.");
         }
 
         // Check if port is already taken (more complex query needed, add later)
@@ -120,7 +121,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         newTask.setScheduledDate(LocalDate.now().plusDays(1));
         newTask.setNotes("Assign network path: Splitter " + splitter.getId() + ", Port " + dto.port() + ". Fiber Length: " + dto.fiberLengthMeters() + "m");
         deploymentTaskRepository.save(newTask);
-        Integer currentUserId = null; // Set to null
+     // Set to null
         String description = "Assigned network path (Splitter: " + splitter.getId() +
                 ", Port: " + dto.port() +
                 ", Neighborhood: " + dto.neighborhood() +

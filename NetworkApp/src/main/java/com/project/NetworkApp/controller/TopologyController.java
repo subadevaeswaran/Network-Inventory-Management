@@ -20,7 +20,7 @@ public class TopologyController {
 
     @GetMapping
     public ResponseEntity<List<TopologyNodeDTO>> getTopology(
-            @RequestParam(defaultValue = "all") String city) { // Default to 'all' if no city specified
+            @RequestParam(defaultValue = "all") String city) {
         List<TopologyNodeDTO> topology = topologyService.getTopologyByCity(city);
         return ResponseEntity.ok(topology);
     }

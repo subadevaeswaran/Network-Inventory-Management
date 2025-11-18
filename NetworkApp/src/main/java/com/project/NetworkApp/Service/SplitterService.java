@@ -2,7 +2,7 @@ package com.project.NetworkApp.Service;
 
 import com.project.NetworkApp.DTO.SplitterCreateDTO;
 import com.project.NetworkApp.DTO.SplitterResponseDTO;
-import com.project.NetworkApp.entity.Splitter;
+
 import java.util.List;
 
 public interface SplitterService {

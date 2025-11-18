@@ -1,6 +1,6 @@
 package com.project.NetworkApp.Service;
 
-// package com.project.NetworkApp.service;
+
 import com.project.NetworkApp.DTO.SplitterCreateDTO;
 import com.project.NetworkApp.DTO.SplitterResponseDTO;
 import com.project.NetworkApp.Repository.AssetRepository;
@@ -12,20 +12,18 @@ import com.project.NetworkApp.entity.Splitter;
 import com.project.NetworkApp.Repository.SplitterRepository;
 import com.project.NetworkApp.enums.AssetStatus;
 import com.project.NetworkApp.enums.AssetType;
-import jakarta.persistence.EntityNotFoundException;
+import com.project.NetworkApp.exception.ParentAssetNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class SplitterServiceImpl implements SplitterService {
 
-    @Autowired
-    private  SplitterRepository splitterRepository;
+
+    private final  SplitterRepository splitterRepository;
     private final FdhRepository fdhRepository;         // <-- Inject FDH Repo
     private final AssetRepository assetRepository;
 
@@ -34,14 +32,14 @@ public class SplitterServiceImpl implements SplitterService {
     public SplitterResponseDTO createSplitter(SplitterCreateDTO splitterCreateDTO) {
         // 1. Find the parent FDH
         Fdh fdh = fdhRepository.findById(splitterCreateDTO.fdhId())
-                .orElseThrow(() -> new EntityNotFoundException("Parent FDH not found with ID: " + splitterCreateDTO.fdhId()));
+                .orElseThrow(() -> new ParentAssetNotFoundException("Parent FDH not found with ID: " + splitterCreateDTO.fdhId()));
 
         // 2. Convert DTO to Splitter Entity and save it
         Splitter newSplitter = SplitterUtility.toEntity(splitterCreateDTO, fdh);
         // Optional: Add validation (e.g., check if model/location combo exists under this FDH)
         Splitter savedSplitter = splitterRepository.save(newSplitter);
 
-        // 3. Create and save the corresponding Asset entity
+
         Asset assetRecord = new Asset();
         assetRecord.setAssetType(AssetType.SPLITTER);
         // Generate a unique serial number (e.g., FDHName-SplitterModel-ID)
@@ -66,7 +64,7 @@ public class SplitterServiceImpl implements SplitterService {
         // 2. Map Entities to DTOs using Utility
         return splitters.stream()
                 .map(SplitterUtility::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 }
 

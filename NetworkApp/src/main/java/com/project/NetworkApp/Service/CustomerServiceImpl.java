@@ -1,6 +1,6 @@
 package com.project.NetworkApp.Service;
 
-/// package com.example.inventory.service;
+
 
  import com.project.NetworkApp.DTO.CustomerDTO;
  import com.project.NetworkApp.Repository.*;
@@ -8,76 +8,41 @@ package com.project.NetworkApp.Service;
  import com.project.NetworkApp.entity.*;
  import com.project.NetworkApp.enums.AssetStatus;
  import com.project.NetworkApp.enums.CustomerStatus;
- import jakarta.persistence.EntityNotFoundException;
+ import com.project.NetworkApp.exception.AssetNotFoundException;
+ import com.project.NetworkApp.exception.CustomerNotFoundException;
+
 import lombok.RequiredArgsConstructor;
- import org.springframework.beans.factory.annotation.Autowired;
- import org.springframework.security.core.Authentication;
- import org.springframework.security.core.context.SecurityContextHolder;
+
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
  import org.springframework.stereotype.Service;
- import com.project.NetworkApp.Service.AuditLogService;
+
  import org.springframework.transaction.annotation.Transactional;
  import org.springframework.util.StringUtils;
 
  import java.util.ArrayList;
  import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
-
     private final SplitterRepository splitterRepository; // Still needed to pass to the utility
     private final AuditLogService auditLogService;
-
     private final AssignedAssetsRepository assignedAssetsRepository;
     private final AssetRepository assetRepository;
+    private static final Logger log = LoggerFactory.getLogger(CustomerServiceImpl.class);
 
-    private Integer getCurrentUserIdFromToken() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal() == null) {
-            System.err.println("Audit Log: No authenticated user found in security context.");
-            return null; // No user is logged in
-        }
 
-        Object principal = authentication.getPrincipal();
 
-        // This depends on your JWT setup.
-        // Option 1: Your principal *is* the User entity
-        if (principal instanceof User) {
-            return ((User) principal).getId();
-        }
-
-        // Option 2: Your principal is Spring's UserDetails
-        if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-            String username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
-            // You must have a way to get user ID from username
-            // This is just an example, implement this lookup if needed
-            // User user = userRepository.findByUsername(username).orElse(null);
-            // if (user != null) return user.getId();
-
-            // For now, if it's just UserDetails, we can't get the ID directly
-            System.err.println("Audit Log: Principal is UserDetails, not User entity. Cannot get ID directly.");
-            return null; // Or implement username-to-ID lookup
-        }
-
-        // Option 3: Your principal is just the username String
-        if (principal instanceof String) {
-            System.err.println("Audit Log: Principal is a String, not User entity. Cannot get ID directly.");
-            return null; // Or implement username-to-ID lookup
-        }
-
-        System.err.println("Audit Log: Principal is of unknown type: " + principal.getClass().getName());
-        return null;
-    }
 
     @Override
     public CustomerDTO createCustomer(CustomerDTO customerDTO) {
-        // Pass the repository to the utility method
         Customer customer = CustomerUtility.toEntity(customerDTO, splitterRepository);
         Customer savedCustomer = customerRepository.save(customer);
-        Integer currentUserId = null; // Replace with actual user ID retrieval
+
         String description = "Created new customer profile for '" + savedCustomer.getName() + "' (ID: " + savedCustomer.getId() + ")";
         auditLogService.logAction("CUSTOMER_CREATE", description, customerDTO.operatorId());
         return CustomerUtility.toDTO(savedCustomer);
@@ -86,7 +51,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerDTO getCustomerById(Integer id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Customer not found with id: " + id));
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found with id: " + id));
         return CustomerUtility.toDTO(customer);
     }
 
@@ -94,7 +59,7 @@ public class CustomerServiceImpl implements CustomerService {
     public List<CustomerDTO> getAllCustomers() {
         return customerRepository.findAll().stream()
                 .map(CustomerUtility::toDTO) // Using a method reference
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -102,7 +67,7 @@ public class CustomerServiceImpl implements CustomerService {
 
         // 1. Find the EXISTING customer from the database
         Customer existingCustomer = customerRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Customer not found with id: " + id));
+                .orElseThrow(() -> new CustomerNotFoundException("Exsisting Customer not found with id: " + id));
 
         // 2. Update the fields on the EXISTING entity
         existingCustomer.setName(customerDTO.name());
@@ -116,7 +81,7 @@ public class CustomerServiceImpl implements CustomerService {
         // 3. Update the relationships on the EXISTING entity
         if (customerDTO.splitterId() != null) {
             Splitter splitter = splitterRepository.findById(customerDTO.splitterId())
-                    .orElseThrow(() -> new EntityNotFoundException("Splitter not found with id: " + customerDTO.splitterId()));
+                    .orElseThrow(() -> new AssetNotFoundException("Splitter not found with id: " + customerDTO.splitterId()));
             existingCustomer.setSplitter(splitter);
         } else {
             existingCustomer.setSplitter(null);
@@ -135,12 +100,12 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public void deactivateCustomer(Integer id, Integer operatorId) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Customer not found with id: " + id));
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found with id: " + id));
 
 
         // Check if already inactive
         if (customer.getStatus() == CustomerStatus.INACTIVE) {
-            System.out.println("Customer " + id + " is already inactive. No action taken.");
+            log.info("Customer {} is already inactive. No action taken.", id);
             return; // Nothing to do
         }
 
@@ -182,8 +147,7 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setSplitter(null);  // Remove the link to the splitter
         customerRepository.save(customer);
 
-        Integer currentUserId = getCurrentUserIdFromToken();
-//       Integer currentUser = null;
+
         // 7. Log the deactivation
         String description = "Deactivated Customer: " + customer.getName() + " (ID: " + customer.getId() + "). "
                 + "Reclaimed assets: " + String.join(", ", reclaimedAssetsSerials) + ". "
@@ -199,7 +163,7 @@ public class CustomerServiceImpl implements CustomerService {
         List<Customer> customers = customerRepository.findByStatus(status);
         return customers.stream()
                 .map(CustomerUtility::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -223,6 +187,6 @@ public class CustomerServiceImpl implements CustomerService {
 
         return customers.stream()
                 .map(CustomerUtility::toDTO) // Use your existing utility
-                .collect(Collectors.toList());
+                .toList();
     }
 }

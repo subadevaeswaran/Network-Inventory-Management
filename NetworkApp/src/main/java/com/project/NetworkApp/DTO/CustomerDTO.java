@@ -1,6 +1,6 @@
 package com.project.NetworkApp.DTO;
 
-// package com.example.inventory.dto;
+
 
 
 import com.project.NetworkApp.enums.ConnectionType;

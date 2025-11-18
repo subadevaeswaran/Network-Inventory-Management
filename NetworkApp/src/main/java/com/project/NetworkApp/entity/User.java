@@ -1,8 +1,5 @@
 package com.project.NetworkApp.entity;
 
-// package com.example.inventory.entity;
-
-
 import com.project.NetworkApp.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

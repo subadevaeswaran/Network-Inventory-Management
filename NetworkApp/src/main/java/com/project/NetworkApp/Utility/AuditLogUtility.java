@@ -9,7 +9,7 @@ import com.project.NetworkApp.Repository.UserRepository; // Import if looking up
 import com.project.NetworkApp.enums.UserRole;
 
 import java.util.Optional;
-import java.util.function.Function; // For username lookup function
+
 
 public final class AuditLogUtility {
 
@@ -72,13 +72,8 @@ public final class AuditLogUtility {
             }
         }
         // Fallback for simple ID numbers (less reliable)
-        String[] words = description.split(" ");
-        for (String word : words) {
-            if (word.matches("\\d+")) { // Check if word is a number
-                // Be careful, might match port numbers etc. Needs context.
-                // return word;
-            }
-        }
+
+
         return "N/A";
     }
     // ------------------------------------------------------------------------------------------

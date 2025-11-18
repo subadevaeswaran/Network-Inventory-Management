@@ -17,10 +17,6 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
 
-    /**
-     * GET /dashboard/metrics
-     * Retrieves key metrics for the Admin dashboard.
-     */
     @GetMapping("/metrics")
     public ResponseEntity<DashboardMetricsDTO> getAdminMetrics() {
         DashboardMetricsDTO metrics = dashboardService.getAdminDashboardMetrics();

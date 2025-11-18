@@ -1,7 +1,5 @@
 package com.project.NetworkApp.controller;
 
-// package com.project.NetworkApp.controller;
-
 import com.project.NetworkApp.DTO.LoginRequestDTO;
 import com.project.NetworkApp.DTO.UserCreateDTO;
 import com.project.NetworkApp.DTO.UserResponseDTO;
@@ -12,17 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/users") // <-- UPDATED: No "/api/v1"
+@RequestMapping("/users")
 @CrossOrigin("http://localhost:5173")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
 
-    /**
-     * POST /users
-     * Creates a new user (e.g., Sales_Agent).
-     */
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@RequestBody UserCreateDTO userCreateDTO) {
         UserResponseDTO createdUser = userService.createUser(userCreateDTO);

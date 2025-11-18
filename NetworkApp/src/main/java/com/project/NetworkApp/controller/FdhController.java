@@ -1,17 +1,13 @@
 package com.project.NetworkApp.controller;
 
-// package com.project.NetworkApp.controller;
-
 import com.project.NetworkApp.DTO.FdhCreateDTO;
 import com.project.NetworkApp.DTO.FdhResponseDTO;
 import com.project.NetworkApp.Service.FdhService;
 import com.project.NetworkApp.entity.Fdh;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -19,13 +15,9 @@ import java.util.List;
 @CrossOrigin("http://localhost:5173")// Base path for FDH-related endpoints
 @RequiredArgsConstructor
 public class FdhController {
-    @Autowired
-    private FdhService fdhService;
 
-    /**
-     * GET /fdh/regions
-     * Gets a unique list of all neighborhood regions where FDHs are present.
-     */
+    private final FdhService fdhService;
+
     @GetMapping("/regions")
     public ResponseEntity<List<String>> getFdhRegions() {
         List<String> regions = fdhService.getDistinctRegions();
@@ -56,6 +48,5 @@ public class FdhController {
         FdhResponseDTO createdFdh = fdhService.createFdh(fdhCreateDTO);
         return new ResponseEntity<>(createdFdh, HttpStatus.CREATED); // Return 201
     }
-
 
 }

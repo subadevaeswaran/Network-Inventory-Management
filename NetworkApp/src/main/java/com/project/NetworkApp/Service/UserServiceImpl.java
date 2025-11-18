@@ -1,19 +1,19 @@
 package com.project.NetworkApp.Service;
 
-// package com.project.NetworkApp.service;
-
 import com.project.NetworkApp.DTO.LoginRequestDTO;
 import com.project.NetworkApp.DTO.UserCreateDTO;
 import com.project.NetworkApp.DTO.UserListResponseDTO;
 import com.project.NetworkApp.DTO.UserResponseDTO;
 import com.project.NetworkApp.entity.User;
 import com.project.NetworkApp.Repository.UserRepository;
-import com.project.NetworkApp.Utility.UserUtility; // <-- Import utility
+import com.project.NetworkApp.Utility.UserUtility;
+import com.project.NetworkApp.exception.AdminDeleteException;
+import com.project.NetworkApp.exception.IncorrectPasswordException;
+import com.project.NetworkApp.exception.UserInvalidException;
+import com.project.NetworkApp.exception.UserNotFoundException;
 import com.project.NetworkApp.security.service.UserDetailsImpl;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -69,16 +69,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public UserResponseDTO login(LoginRequestDTO loginRequestDTO) {
         // 1. Find the user by username
         User user = userRepository.findByUsername(loginRequestDTO.username())
-                .orElseThrow(() -> new EntityNotFoundException("No user with this name"));
+                .orElseThrow(() -> new UserNotFoundException("No user with this name"));
 
         // 2. Check the password (plain text check, as requested)
         if (!user.getPassword().equals(loginRequestDTO.password())) {
-            throw new SecurityException("Incorrect password");
+            throw new IncorrectPasswordException("Incorrect password");
         }
 
         // 3. Check the role
         if (user.getRole() != loginRequestDTO.role()) {
-            throw new SecurityException("User role does not match");
+            throw new UserInvalidException("User role does not match");
         }
 
         // 4. Login successful, update lastLogin time
@@ -96,7 +96,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         // Convert the list of User entities to a list of DTOs
         return users.stream()
                 .map(UserListResponseDTO::new) // Uses the constructor we made
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -104,12 +104,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         // Optional: Add a check to prevent users from deleting themselves
         UserDetailsImpl currentUser = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (currentUser.getId().equals(userId.longValue())) {
-            throw new AccessDeniedException("Admin users cannot delete their own account.");
+            throw new AdminDeleteException("Admin users cannot delete their own account.");
         }
 
         // Find by ID and delete
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
 
         userRepository.delete(user);
     }

@@ -10,7 +10,10 @@ import com.project.NetworkApp.enums.AssetType;
 import com.project.NetworkApp.Repository.AssetRepository;
 import com.project.NetworkApp.Repository.AssignedAssetsRepository;
 import com.project.NetworkApp.Repository.FaultReportRepository;
-import com.project.NetworkApp.Service.AuditLogService;
+import com.project.NetworkApp.exception.AssetAssignmentException;
+import com.project.NetworkApp.exception.AssetNotFoundException;
+import com.project.NetworkApp.exception.AssetReportException;
+import com.project.NetworkApp.exception.CustomerNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,34 +36,34 @@ public class DeviceSwapServiceImpl implements DeviceSwapService {
 
         // 1. Find and validate the FAULTY asset
         Asset faultyAsset = assetRepository.findById(dto.faultyAssetId())
-                .orElseThrow(() -> new EntityNotFoundException("Faulty Asset not found with ID: " + dto.faultyAssetId()));
+                .orElseThrow(() -> new AssetNotFoundException("Faulty Asset not found with ID: " + dto.faultyAssetId()));
 
         if (faultyAsset.getStatus() != AssetStatus.ASSIGNED) {
-            throw new IllegalStateException("Device " + faultyAsset.getSerialNumber() + " is not currently ASSIGNED.");
+            throw new AssetReportException("Device " + faultyAsset.getSerialNumber() + " is not currently ASSIGNED.");
         }
         if (faultyAsset.getAssetType() != AssetType.ONT && faultyAsset.getAssetType() != AssetType.ROUTER) {
-            throw new IllegalStateException("Only ONT or ROUTER assets can be swapped.");
+            throw new AssetReportException("Only ONT or ROUTER assets can be swapped.");
         }
 
         // 2. Find and validate the REPLACEMENT asset
         Asset replacementAsset = assetRepository.findById(dto.replacementAssetId())
-                .orElseThrow(() -> new EntityNotFoundException("Replacement Asset not found with ID: " + dto.replacementAssetId()));
+                .orElseThrow(() -> new AssetNotFoundException("Replacement Asset not found with ID: " + dto.replacementAssetId()));
 
         if (replacementAsset.getStatus() != AssetStatus.AVAILABLE) {
-            throw new IllegalStateException("Replacement device " + replacementAsset.getSerialNumber() + " is not AVAILABLE.");
+            throw new AssetNotFoundException("Replacement device " + replacementAsset.getSerialNumber() + " is not AVAILABLE.");
         }
         if (replacementAsset.getAssetType() != faultyAsset.getAssetType()) {
-            throw new IllegalStateException("Replacement device type (" + replacementAsset.getAssetType() +
+            throw new AssetNotFoundException("Replacement device type (" + replacementAsset.getAssetType() +
                     ") does not match faulty device type (" + faultyAsset.getAssetType() + ").");
         }
 
         // 3. Find the original assignment link (and the customer)
         AssignedAssets oldAssignment = assignedAssetsRepository.findByAsset_Id(faultyAsset.getId())
-                .orElseThrow(() -> new EntityNotFoundException("No assignment record found for faulty asset ID: " + faultyAsset.getId()));
+                .orElseThrow(() -> new AssetAssignmentException("No assignment record found for faulty asset ID: " + faultyAsset.getId()));
 
         Customer customer = oldAssignment.getCustomer();
         if (customer == null) {
-            throw new EntityNotFoundException("No customer found for assignment record: " + oldAssignment.getId());
+            throw new CustomerNotFoundException("No customer found for assignment record: " + oldAssignment.getId());
         }
 
         // --- Start Database Operations ---

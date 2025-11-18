@@ -7,7 +7,7 @@ import com.project.NetworkApp.Utility.AssignedAssetsUtility; // Import utility
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +20,6 @@ public class AssignedAssetsServiceImpl implements AssignedAssetsService {
         List<AssignedAssets> assignments = assignedAssetsRepository.findByCustomer_Id(customerId);
         return assignments.stream()
                 .map(AssignedAssetsUtility::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

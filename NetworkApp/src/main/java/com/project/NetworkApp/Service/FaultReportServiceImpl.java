@@ -6,8 +6,7 @@ import com.project.NetworkApp.entity.FaultReport;
 import com.project.NetworkApp.enums.AssetStatus;
 import com.project.NetworkApp.Repository.AssetRepository;
 import com.project.NetworkApp.Repository.FaultReportRepository;
-import com.project.NetworkApp.Service.AuditLogService;
-import jakarta.persistence.EntityNotFoundException;
+import com.project.NetworkApp.exception.AssetNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +24,7 @@ public class FaultReportServiceImpl implements FaultReportService {
     public void reportFault(FaultReportDTO dto) {
         // 1. Find the asset by its serial number
         Asset asset = assetRepository.findBySerialNumber(dto.deviceSerial())
-                .orElseThrow(() -> new EntityNotFoundException("Asset not found with serial number: " + dto.deviceSerial()));
+                .orElseThrow(() -> new AssetNotFoundException("Asset not found with serial number: " + dto.deviceSerial()));
 
         // 2. Update the asset's status to FAULTY
         asset.setStatus(AssetStatus.FAULTY);

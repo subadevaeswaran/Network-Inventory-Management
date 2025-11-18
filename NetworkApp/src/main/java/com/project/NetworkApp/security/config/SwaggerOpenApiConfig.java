@@ -18,7 +18,6 @@ import java.util.List;
 public class SwaggerOpenApiConfig {
     @Bean
     public OpenAPI springOpenAPI() {
-        //final String securitySchemeName = "bearerAuth";
         final String securitySchemeName="BearerAuthentication";
         return new OpenAPI()
                 // defining security scheme

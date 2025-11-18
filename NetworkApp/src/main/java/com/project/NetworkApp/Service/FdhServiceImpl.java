@@ -1,6 +1,6 @@
 package com.project.NetworkApp.Service;
 
-// package com.project.NetworkApp.service;
+
 
 import com.project.NetworkApp.DTO.FdhCreateDTO;
 import com.project.NetworkApp.DTO.FdhResponseDTO;
@@ -13,22 +13,25 @@ import com.project.NetworkApp.entity.Fdh;
 import com.project.NetworkApp.entity.Headend;
 import com.project.NetworkApp.enums.AssetStatus;
 import com.project.NetworkApp.enums.AssetType;
-import jakarta.persistence.EntityNotFoundException;
+import com.project.NetworkApp.exception.AssetNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class FdhServiceImpl implements FdhService {
-    @Autowired
-    private  FdhRepository fdhRepository;
+
+    private final   FdhRepository fdhRepository;
     private final HeadendRepository headendRepository;
     private final AssetRepository assetRepository;
+
+    private static final Logger log = LoggerFactory.getLogger(FdhServiceImpl.class);
+
 
     @Override
     public List<String> getDistinctRegions() {
@@ -37,22 +40,22 @@ public class FdhServiceImpl implements FdhService {
 
     @Override
     public List<String> getRegionsByCity(String city) {
-        System.out.println(">>> Service: Fetching Regions for city: " + city); // Add Log
+       log.info(">>> Service: Fetching Regions for city: {}" , city); // Add Log
         List<String> regions = fdhRepository.findDistinctRegionsByCity(city); // Calls the specific query
-        System.out.println(">>> Service: Found " + regions.size() + " regions for city " + city); // Add Log
+        log.info("Service: Found {} regions for city {}", regions.size(), city);
         return regions;
     }
 
     @Override
     public List<FdhResponseDTO> getFdhsByCity(String city) {
-        System.out.println(">>> Service: Fetching FDHs for city: " + city); // Add Log
+        log.info(">>> Service: Fetching FDHs for city: {}" , city); // Add Log
         // Ensure it calls findByHeadend_City
         List<Fdh> fdhs = fdhRepository.findByHeadend_City(city);
-        System.out.println(">>> Service: Found " + fdhs.size() + " FDH entities for city " + city);
+        log.info("Service: Found {} FDH entities for city {}", fdhs.size(), city);
         // Map entities to DTOs
         return fdhs.stream()
                 .map(FdhUtility::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -65,13 +68,13 @@ public class FdhServiceImpl implements FdhService {
     public FdhResponseDTO createFdh(FdhCreateDTO fdhCreateDTO) {
         // 1. Find the parent Headend
         Headend headend = headendRepository.findById(fdhCreateDTO.headendId())
-                .orElseThrow(() -> new EntityNotFoundException("Parent Headend not found with ID: " + fdhCreateDTO.headendId()));
+                .orElseThrow(() -> new AssetNotFoundException("Parent Headend not found with ID: " + fdhCreateDTO.headendId()));
 
         // 2. Convert DTO to FDH Entity and save it
         Fdh newFdh = FdhUtility.toEntity(fdhCreateDTO, headend);
         Fdh savedFdh = fdhRepository.save(newFdh); // Save FDH first to get its ID if needed
 
-        // --- ADD THIS BLOCK ---
+
         // 3. Create and save the corresponding Asset entity
         Asset assetRecord = new Asset();
         assetRecord.setAssetType(AssetType.FDH); // Set the type
@@ -87,12 +90,11 @@ public class FdhServiceImpl implements FdhService {
         // but the serialNumber (FDH name) provides the link.
 
         // Optional: Check if an asset with this serial already exists
-        assetRepository.findBySerialNumber(assetRecord.getSerialNumber()).ifPresent(existing -> {
-            // Handle duplicate FDH name/serial number case if necessary
-            // Could throw exception or update existing asset if logic requires
-            System.err.println("Warning: Asset record with serial number (FDH name) " + assetRecord.getSerialNumber() + " already exists.");
-            // For now, we'll proceed, potentially overwriting or causing unique constraint error if name isn't unique
-        });
+        assetRepository.findBySerialNumber(assetRecord.getSerialNumber())
+                .ifPresent(existing -> log.warn(
+                        "Asset record with serial number (FDH name) {} already exists.",
+                        assetRecord.getSerialNumber()));
+
 
 
         assetRepository.save(assetRecord); // Save the Asset record
@@ -104,10 +106,10 @@ public class FdhServiceImpl implements FdhService {
 
     @Override
     public List<Fdh> getFdhsByCityAndRegion(String city, String region) {
-        System.out.println(">>> Service: Fetching FDHs for city: " + city + ", region: " + region); // Log
+        log.info("Service: Fetching FDHs for city: {}, region: {}", city, region);
         // Use the updated repository method
         List<Fdh> results = fdhRepository.findByHeadend_CityAndRegion(city, region);
-        System.out.println(">>> Service: Found " + results.size() + " FDHs for criteria."); // Log
+        log.info("Service: Found {} FDHs for the given criteria.", results.size());
         return results;
     }
 }

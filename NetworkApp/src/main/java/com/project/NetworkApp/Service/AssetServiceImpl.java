@@ -10,20 +10,23 @@ import com.project.NetworkApp.Utility.AssetUtility; // Ensure utility is importe
 import com.project.NetworkApp.entity.Asset;
 import com.project.NetworkApp.enums.AssetStatus;
 import com.project.NetworkApp.enums.AssetType;
+import com.project.NetworkApp.exception.*;
 import jakarta.persistence.EntityNotFoundException; // For error handling
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Optional for read-only methods
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("java:S3776")
 public class AssetServiceImpl implements AssetService {
 
     private final AssetRepository assetRepository;
+    private static final Logger log = LoggerFactory.getLogger(AssetServiceImpl.class);
+
 
     private final SplitterRepository splitterRepository;
     private final FdhRepository fdhRepository; // Inject FDH Repo
@@ -34,7 +37,7 @@ public class AssetServiceImpl implements AssetService {
     public AssetResponseDTO createAsset(AssetCreateDTO assetCreateDTO) {
         // Optional: Check if serial number already exists to prevent duplicates
         assetRepository.findBySerialNumber(assetCreateDTO.serialNumber()).ifPresent(existing -> {
-            throw new IllegalArgumentException("Asset with serial number " + assetCreateDTO.serialNumber() + " already exists.");
+            throw new SerialNumberException("Asset with serial number " + assetCreateDTO.serialNumber() + " already exists.");
         });
 
         Asset newAsset = AssetUtility.toEntity(assetCreateDTO);
@@ -50,7 +53,7 @@ public class AssetServiceImpl implements AssetService {
     @Transactional(readOnly = true) // Optimize for read operations
     public AssetResponseDTO getAssetById(Integer id) {
         Asset asset = assetRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Asset not found with id: " + id));
+                .orElseThrow(() -> new AssetNotFoundException("Asset not found with id: " + id));
         return AssetUtility.toDTO(asset);
     }
 
@@ -59,7 +62,7 @@ public class AssetServiceImpl implements AssetService {
     public List<AssetResponseDTO> getAllAssets() {
         return assetRepository.findAll().stream()
                 .map(AssetUtility::toDTO).toList();
-                //.collect(Collectors.toList());
+
     }
 
     @Override
@@ -68,7 +71,7 @@ public class AssetServiceImpl implements AssetService {
         List<Asset> assets = assetRepository.findByAssetTypeAndStatus(assetType, AssetStatus.AVAILABLE);
         return assets.stream()
                 .map(AssetUtility::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -78,7 +81,7 @@ public class AssetServiceImpl implements AssetService {
         List<Asset> assets = assetRepository.findAssetsByCriteria(type, status);
         return assets.stream()
                 .map(AssetUtility::toDTO)
-                .collect(Collectors.toList());
+            .toList();
     }
 
     @Override
@@ -86,11 +89,11 @@ public class AssetServiceImpl implements AssetService {
     public void deleteAsset(Integer assetId) {
         // 1. Find the Asset record
         Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new EntityNotFoundException("Asset not found with ID: " + assetId));
+                .orElseThrow(() -> new AssetNotFoundException("Asset not found with ID: " + assetId));
 
         // 2. Check if the status allows deletion
         if (asset.getStatus() != AssetStatus.AVAILABLE) {
-            throw new IllegalStateException("Cannot delete asset with status '" + asset.getStatus() + "'. Only 'AVAILABLE' assets can be deleted.");
+            throw new AssetDeleteException("Cannot delete asset with status '" + asset.getStatus() + "'. Only 'AVAILABLE' assets can be deleted.");
         }
 
         // 3. Handle deletion of associated infrastructure entities (if applicable)
@@ -101,45 +104,46 @@ public class AssetServiceImpl implements AssetService {
             if (splitterId != null) {
                 // Check if splitter exists (should normally)
                 if (!splitterRepository.existsById(splitterId)) {
-                    System.err.println("Warning: Associated Splitter with ID " + splitterId + " not found for Asset " + assetId + ". Deleting Asset record only.");
+                    log.warn("Warning: Associated Splitter with ID {} " , splitterId);
                 } else {
                     // Check for dependencies (customers)
                     long customerCount = customerRepository.countBySplitter_Id(splitterId);
                     if (customerCount > 0) {
-                        throw new DataIntegrityViolationException("Cannot delete Splitter " + splitterId + " as it has " + customerCount + " customers assigned.");
+                        throw new SplitterDeleteException("Cannot delete Splitter " + splitterId + " as it has " + customerCount + " customers assigned.");
                     }
                     // Delete the Splitter entity
                     splitterRepository.deleteById(splitterId);
                     deletedInfraType = "Splitter";
-                    System.out.println("Deleted associated Splitter: " + splitterId);
+                    log.info("Deleted associated Splitter: {}" , splitterId);
                 }
             } else {
-                System.err.println("Warning: Asset " + assetId + " is type SPLITTER but has no relatedEntityId. Deleting Asset record only.");
+                log.warn("Warning: Asset :  {} " ,assetId);
             }
         } else if (asset.getAssetType() == AssetType.FDH) {
             Integer fdhId = asset.getRelatedEntityId();
             if (fdhId != null) {
                 if (!fdhRepository.existsById(fdhId)) {
-                    System.err.println("Warning: Associated FDH with ID " + fdhId + " not found for Asset " + assetId + ". Deleting Asset record only.");
+                    log.warn("Warning: Associated FDH with ID {} not found for Asset {}. Deleting Asset record only.", fdhId, assetId);
                 } else {
                     // Check for dependencies (splitters)
                     long splitterCount = splitterRepository.countByFdh_Id(fdhId);
                     if (splitterCount > 0) {
-                        throw new DataIntegrityViolationException("Cannot delete FDH " + fdhId + " as it has " + splitterCount + " splitters assigned.");
+                        throw new SplitterPortAssignedException("Cannot delete FDH " + fdhId + " as it has " + splitterCount + " splitters assigned.");
                     }
                     // Delete the FDH entity
                     fdhRepository.deleteById(fdhId);
                     deletedInfraType = "FDH";
-                    System.out.println("Deleted associated FDH: " + fdhId);
+                    log.info("Deleted associated FDH: {}" , fdhId);
                 }
             } else {
-                System.err.println("Warning: Asset " + assetId + " is type FDH but has no relatedEntityId. Deleting Asset record only.");
+                log.warn("Asset {} is of type FDH but has no relatedEntityId. Deleting Asset record only.", assetId);
             }
         }
 
         // 4. Delete the Asset record itself
         assetRepository.delete(asset);
-        System.out.println("Deleted Asset: " + assetId + (deletedInfraType != null ? " (and associated " + deletedInfraType + ")" : ""));
+        log.info("Deleted Asset: {}{}", assetId,
+                deletedInfraType != null ? " (and associated " + deletedInfraType + ")" : "");
     }
 
     @Override
@@ -147,7 +151,7 @@ public class AssetServiceImpl implements AssetService {
     public AssetResponseDTO findSwappableDeviceBySerial(String serial) {
         // 1. Find the asset by serial number
         Asset asset = assetRepository.findBySerialNumber(serial)
-                .orElseThrow(() -> new EntityNotFoundException("Asset not found with serial number: " + serial));
+                .orElseThrow(() -> new AssetNotFoundException("Asset not found with serial number: " + serial));
 
         // 2. Check if it's an ONT or ROUTER
         if (asset.getAssetType() != AssetType.ONT && asset.getAssetType() != AssetType.ROUTER) {
@@ -156,7 +160,7 @@ public class AssetServiceImpl implements AssetService {
 
         // 3. Check if it's currently ASSIGNED
         if (asset.getStatus() != AssetStatus.ASSIGNED) {
-            throw new IllegalStateException("Device status is " + asset.getStatus() + ". Only ASSIGNED devices can be reported.");
+            throw new AssetReportException("Device status is " + asset.getStatus() + ". Only ASSIGNED devices can be reported.");
         }
 
         // 4. If all checks pass, return the asset DTO
@@ -180,6 +184,6 @@ public class AssetServiceImpl implements AssetService {
         // Map to DTOs
         return assets.stream()
                 .map(AssetUtility::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

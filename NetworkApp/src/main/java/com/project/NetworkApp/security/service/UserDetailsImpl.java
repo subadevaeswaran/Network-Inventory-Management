@@ -11,8 +11,8 @@ import java.util.Collection;
 import java.util.Collections; // Import this
 import java.util.List;
 import java.util.Objects;
-// Remove 'Collectors' as it's no longer needed
 
+@SuppressWarnings("java:S1206")
 public class UserDetailsImpl implements UserDetails {
     private static final long serialVersionUID = 1L;
 

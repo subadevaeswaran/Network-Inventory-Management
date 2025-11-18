@@ -1,10 +1,8 @@
 package com.project.NetworkApp.controller;
-// package com.project.NetworkApp.controller;
 
 import com.project.NetworkApp.DTO.HeadendDTO;
 import com.project.NetworkApp.Service.HeadendService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HeadendController {
 
-    @Autowired
-    private  HeadendService headendService;
+    private final  HeadendService headendService;
 
     @GetMapping("/cities")
     public ResponseEntity<List<String>> getCities() {

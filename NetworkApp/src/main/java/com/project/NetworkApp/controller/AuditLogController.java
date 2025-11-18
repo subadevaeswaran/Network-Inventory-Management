@@ -20,11 +20,7 @@ public class AuditLogController {
 
     private final AuditLogService auditLogService;
 
-    /**
-     * GET /auditlogs
-     * Retrieves all audit log entries (sorted by timestamp descending).
-     * TODO: Add pagination and filtering parameters later.
-     */
+
     @GetMapping
     public ResponseEntity<List<AuditLogResponseDTO>> getAllAuditLogs() {
         List<AuditLogResponseDTO> logs = auditLogService.getAllLogs();

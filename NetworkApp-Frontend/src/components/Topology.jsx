@@ -1,20 +1,32 @@
-// src/components/Topology.jsx
-import React, { useState, useEffect , useCallback} from 'react'; // <-- Import React if not already
-import { Network, Radio, Wifi , HomeIcon , Shuffle , RouterIcon} from 'lucide-react'; // Keep icons
-import apiClient from '../api/apiClient'; // <-- Import apiClient
+// React and hooks
+import React, { useState, useEffect, useCallback } from 'react';
+
+// Third-party libraries
+import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import ReactFlow, {
   Controls,
   Background,
   useNodesState,
   useEdgesState,
-  addEdge,
-  MarkerType, // For arrowheads if needed
-  Handle,     // <-- Import Handle
+  MarkerType,
+  Handle,
   Position,
 } from 'reactflow';
+import 'reactflow/dist/style.css';
 
-import 'reactflow/dist/style.css'; // Default styles
+// Icons
+import { 
+  Network, 
+  Radio, 
+  Wifi, 
+  Shuffle, 
+  Router as RouterIcon,
+  Activity 
+} from 'lucide-react';
+
+// API
+import apiClient from '../api/apiClient';
 
 const nodeWidth = 150;
 const nodeHeight = 80;
@@ -23,76 +35,71 @@ const verticalGap = 70;
 
 // --- Custom Node Components (Optional but Recommended) ---
 // Simple styled divs based on type
-const CustomNode = ({ data, selected }) => { // <-- React Flow passes 'selected' prop
-    let bgColor = 'bg-gray-200';
+const CustomNode = ({ data, selected }) => {
+    let bgColor = 'bg-white';
     let icon = null;
-    let nameStyle = 'text-gray-800 font-medium text-md';
-    let borderStyle = 'border-transparent'; // Default border
+    let nameStyle = 'text-[#1e293b] font-medium text-sm';
+    let borderStyle = 'border-[#1d4ed8]/30';
+    let iconColor = 'text-[#1d4ed8]';
 
-    // --- Determine Base Styles ---
     switch (data.type) {
         case 'Headend':
-            bgColor = 'bg-blue-600 text-white';
-            icon = <Network className="w-4 h-4 mr-1 inline-block" />;
-            nameStyle = 'text-white font-semibold text-md';
+            bgColor = 'bg-[#1d4ed8]/15';
+            icon = <Network className={`w-4 h-4 mr-1.5 inline-block ${iconColor}`} />;
+            nameStyle = 'text-[#1e40af] font-semibold text-sm';
             break;
         case 'FDH':
-            bgColor = 'bg-blue-400 text-white';
-            icon = <Radio className="w-4 h-4 mr-2 inline-block" />;
-            nameStyle = 'text-white font-medium text-md';
+            bgColor = 'bg-[#1d4ed8]/10';
+            icon = <Radio className={`w-4 h-4 mr-1.5 inline-block ${iconColor}`} />;
+            nameStyle = 'text-[#1e293b] font-medium text-sm';
             break;
         case 'Splitter':
-            bgColor = 'bg-sky-200 text-sky-800';
-            icon = <Shuffle className="w-6 h-6 mr-1 inline-block" />;
+            bgColor = 'bg-[#1d4ed8]/5';
+            icon = <Shuffle className={`w-4 h-4 mr-1.5 inline-block ${iconColor}`} />;
+            nameStyle = 'text-[#1e293b] font-medium text-sm';
             break;
         case 'House':
-            bgColor = 'bg-gray-100 border border-gray-300'; // Keep base border
-            icon = <RouterIcon className="w-4 h-4 mr-1 inline-block text-gray-600" />;
-            nameStyle = 'text-gray-700 text-sm';
-             // Add status border color if applicable
-             if (data.details?.status === 'ACTIVE') {
-                 borderStyle = 'border-green-800';
-             } else if (data.details?.status === 'PENDING' || data.details?.status === 'Warning') { // Handle Warning too
-                 borderStyle = 'border-yellow-500';
-             }
+            bgColor = 'bg-white';
+            icon = <RouterIcon className="w-4 h-4 mr-1.5 inline-block text-[#475569]" />;
+            nameStyle = 'text-[#1e293b] text-sm';
+            
+            if (data.details?.status === 'ACTIVE') {
+                borderStyle = 'border-green-600/40';
+            } else if (data.details?.status === 'PENDING' || data.details?.status === 'Warning') {
+                borderStyle = 'border-amber-600/40';
+            }
             break;
     }
 
-    // --- Add Selected Style ---
     if (selected) {
-        borderStyle = 'border-blue-700 border-2 shadow-lg'; // Add thicker border and shadow for selected
+        borderStyle = 'border-[#1d4ed8] shadow-md';
+        bgColor = `${bgColor.replace('/5', '/10').replace('/10', '/15').replace('/15', '/20')}`;
     }
-    
 
     return (
-       // Add Handle components INSIDE the main div
-       <div className={`p-4 rounded shadow-md border ${bgColor} ${borderStyle} 
-                       hover:opacity-60 transition-opacity duration-150 cursor-pointer`} // <-- ADD HOVER EFFECT HERE
-             style={{ width: nodeWidth, height: nodeHeight }}>
-            {/* --- Add Handles --- */}
-            {/* Target handle (incoming connections) on the Left */}
+        <div 
+            className={`p-4 rounded-xl shadow-sm border ${bgColor} ${borderStyle} 
+                    hover:shadow-md hover:border-[#1d4ed8]/50 hover:bg-opacity-125 transition-all duration-200 cursor-pointer`}
+            style={{ width: nodeWidth, height: nodeHeight }}
+        >
             <Handle
                 type="target"
                 position={Position.Left}
-                style={{ background: '#555', width: '8px', height: '8px', left: '-4px' }} // Optional styling
-                isConnectable={false} // Make read-only
+                style={{ background: '#1d4ed8', width: '6px', height: '6px', left: '-3px', borderRadius: '3px' }}
+                isConnectable={false}
             />
 
-             {/* Node Content */}
-            <div className="flex items-center text-md mb-1 font-semibold">{icon}{data.type}</div>
-            <div className={nameStyle + ' truncate'} title={data.name}>{data.name}</div>
+            <div className="flex items-center text-sm mb-1.5 font-medium">{icon}{data.type}</div>
+            <div className={`${nameStyle} truncate`} title={data.name}>{data.name}</div>
 
-             {/* Source handle (outgoing connections) on the Right */}
-             {/* Only add source handle if node actually has children */}
-             {data.children && data.children.length > 0 && (
+            {data.children && data.children.length > 0 && (
                 <Handle
                     type="source"
                     position={Position.Right}
-                    style={{ background: '#555', width: '8px', height: '8px', right: '-4px' }} // Optional styling
-                    isConnectable={false} // Make read-only
+                    style={{ background: '#1d4ed8', width: '6px', height: '6px', right: '-3px', borderRadius: '3px' }}
+                    isConnectable={false}
                 />
-             )}
-             {/* --------------- */}
+            )}
         </div>
     );
 };
@@ -330,8 +337,8 @@ try {
                             source: node.id, // Parent node ID
                             target: childId, // Child node ID
                             type: 'smoothstep',
-                             markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#A0AEC0' },
-                             style: { stroke: '#CBD5E1', strokeWidth: 1.5 },
+                             markerEnd: { type: MarkerType.ArrowClosed, width: 15, height: 15, color: '#64748b' },
+                             style: { stroke: '#94a3b8', strokeWidth: 1.5 },
                          };
                          console.log("Creating Edge:", newEdge); // <-- LOG 3: Check created edge
                          rfEdges.push(newEdge); // Add edge to array
@@ -395,156 +402,223 @@ const onNodeClick = useCallback((event, node) => {
   const findNodeById = (id) => topologyData.find(n => n.id === id);
 
   return (
-    <div className="space-y-4">
+    <div className="bg-[#f8fafc] p-6 space-y-6">
       {/* Page Header */}
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-1">Network Topology Visualization</h2>
-        <p className="text-sm text-gray-600">Interactive view of network infrastructure</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h2 className="text-2xl font-semibold text-[#334155] mb-1">Network Topology Visualization</h2>
+        <p className="text-sm text-[#64748b]">Interactive view of network infrastructure</p>
+      </motion.div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4"> {/* Use flex-wrap for smaller screens */}
-       
-       {/* --- City Filter Select (Updated) --- */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="flex flex-wrap gap-4"
+      >
+        {/* City Filter Select */}
         <select
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          disabled={isLoadingCities} // Disable while loading
-          className="w-48 border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100"
+          disabled={isLoadingCities}
+          className="w-48 border border-[#2563eb]/20 rounded-xl shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-[#2563eb]/20 focus:border-[#2563eb]/30 bg-white disabled:bg-[#f8fafc] text-[#334155]"
         >
           <option value="all">All Cities</option>
-          {/* Map over the fetched cities state */}
           {cities.map((city) => (
             <option key={city} value={city}>
               {city}
             </option>
           ))}
         </select>
+
         {/* Device Type Filter Select */}
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="w-48 border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
+          className="w-48 border border-[#2563eb]/20 rounded-xl shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-[#2563eb]/20 focus:border-[#2563eb]/30 bg-white text-[#334155]"
         >
           <option value="all">All Devices</option>
           <option value="fdh">FDH Only</option>
           <option value="splitter">Splitters Only</option>
           <option value="ont">ONTs Only</option>
         </select>
+
         {/* Status Filter Select */}
         <select
            value={statusFilter}
            onChange={(e) => setStatusFilter(e.target.value)}
-           className="w-48 border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
+           className="w-48 border border-[#2563eb]/20 rounded-xl shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-[#2563eb]/20 focus:border-[#2563eb]/30 bg-white text-[#334155]"
         >
           <option value="all">All Status</option>
           <option value="active">Active</option>
           <option value="warning">Warning</option>
           <option value="fault">Fault</option>
         </select>
-      </div>
+      </motion.div>
 
       {/* Main Grid: Topology Diagram + Details Panel */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* --- React Flow Diagram Card --- */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow border border-gray-200">
-          <div className="p-4 md:p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Network className="h-5 w-5 text-blue-600" />
+        {/* React Flow Diagram Card */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-[#2563eb]/20 hover:shadow-md transition-all"
+        >
+          <div className="p-4 md:p-6 border-b border-gray-100">
+            <h3 className="text-lg font-semibold text-[#334155] flex items-center gap-2">
+              <Network className="h-5 w-5 text-[#2563eb]" />
               Network Tree View {cityFilter !== 'all' ? `(${cityFilter})` : ''}
             </h3>
           </div>
-          {/* Set a fixed height for the React Flow container */}
-          <div className="h-[60vh] w-full border-t border-gray-200"> {/* Adjust height as needed */}
+          <div className="h-[60vh] w-full border-t border-gray-100">
              {isLoading ? (
-                  <div className="flex justify-center items-center h-full"><p className="text-gray-500">Loading Topology...</p></div>
+                <div className="flex justify-center items-center h-full">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-[#64748b]"
+                  >
+                    Loading Topology...
+                  </motion.div>
+                </div>
               ) : (
                 <ReactFlow
                   nodes={nodes}
                   edges={edges}
-                  onNodesChange={onNodesChange} // Handles node dragging/selection internally
-                  onEdgesChange={onEdgesChange} // Handles edge changes internally
-                  // onConnect={onConnect} // Use if you need edge creation
-                  onNodeClick={onNodeClick} // Update details panel on click
-                  nodeTypes={nodeTypes} // Register custom nodes
-                  fitView // Zooms/pans to fit nodes initially
-                  fitViewOptions={{ padding: 0.1 }} // Padding for fitView
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onNodeClick={onNodeClick}
+                  nodeTypes={nodeTypes}
+                  fitView
+                  fitViewOptions={{ padding: 0.1 }}
                 >
-                  <Background color="#000000" variant="dots" gap={16} size={0.5} />
+                  <Background color="#64748b" variant="dots" gap={16} size={0.5} />
                   <Controls />
                 </ReactFlow>
               )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Node Details Panel Card (using styled div) */}
-        <div className="lg:col-span-1 bg-white rounded-lg shadow border border-gray-200"> {/* Added self-start */}
-          {/* Card Header */}
-          <div className="p-4 md:p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Node Details</h3>
+        {/* Node Details Panel Card */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+          className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-[#2563eb]/20 hover:shadow-md transition-all"
+        >
+          <div className="p-4 md:p-6 border-b border-gray-100">
+            <h3 className="text-lg font-semibold text-[#334155] flex items-center gap-2">
+              <Activity className="h-5 w-5 text-[#2563eb]" />
+              Node Details
+            </h3>
           </div>
-        {/* Card Content */}
           <div className="p-4 md:p-6 space-y-4">
             {selectedNodeData ? (
-             <>
-                {/* Details Header (Icon, Name, Type) */}
-                <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
-                   {selectedNodeData.type === "Headend" && <Network className="h-7 w-7 text-blue-600 flex-shrink-0" />}
-                   {selectedNodeData.type === "FDH" && <Radio className="h-7 w-7 text-blue-500 flex-shrink-0" />}
-                   {selectedNodeData.type === "Splitter" && <Wifi className="h-7 w-7 text-blue-400 flex-shrink-0" />}
-                   {selectedNodeData.type === "House" && <RouterIcon className="h-7 w-7 text-gray-600 flex-shrink-0" />} {/* Import HomeIcon from lucide */}
-                   {/* Add ONT icon if needed */}
+             <motion.div
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               transition={{ duration: 0.3 }}
+             >
+                {/* Details Header */}
+                <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                   {selectedNodeData.type === "Headend" && <Network className="h-7 w-7 text-[#2563eb] flex-shrink-0" />}
+                   {selectedNodeData.type === "FDH" && <Radio className="h-7 w-7 text-[#2563eb] flex-shrink-0" />}
+                   {selectedNodeData.type === "Splitter" && <Wifi className="h-7 w-7 text-[#2563eb] flex-shrink-0" />}
+                   {selectedNodeData.type === "House" && <RouterIcon className="h-7 w-7 text-[#64748b] flex-shrink-0" />}
                   <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-gray-800 truncate">{selectedNodeData.name}</h3>
-                    <span className="mt-1 inline-block px-2 py-0.5 rounded text-xs font-medium border border-gray-300 bg-gray-50 text-gray-600">
+                    <h3 className="text-base font-semibold text-[#334155] truncate">{selectedNodeData.name}</h3>
+                    <span className="mt-1 inline-block px-2 py-0.5 rounded-lg text-xs font-medium border border-[#2563eb]/20 bg-[#2563eb]/5 text-[#2563eb]">
                       {selectedNodeData.type}
                     </span>
                   </div>
                 </div>
 
-                {/* Details Section (Details map, Children list) */}
-                <div className="space-y-3 text-sm">
-                  {selectedNodeData.details && Object.entries(selectedNodeData.details).map(([key, value]) => (
-                      value && <div key={key}>
-                          <p className="text-xs font-medium text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
-                          <p className="text-gray-800">{value}</p>
-                      </div>
+                {/* Details Section */}
+                <div className="space-y-4 text-sm">
+                  {selectedNodeData.details && Object.entries(selectedNodeData.details).map(([key, value], index) => (
+                    value && (
+                      <motion.div
+                        key={key}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                      >
+                        <p className="text-xs font-medium text-[#64748b] capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
+                        <p className="text-[#334155]">{value}</p>
+                      </motion.div>
+                    )
                   ))}
-                  {/* Display Children IDs */}
+                  
+                  {/* Connected Devices */}
                   {selectedNodeData.children && selectedNodeData.children.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Connected Device IDs ({selectedNodeData.children.length})</p>
-                      <div className="space-y-1 max-h-32 overflow-y-auto pr-2 text-xs">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}
+                    >
+                      <p className="text-xs font-medium text-[#64748b] mb-2">Connected Device IDs ({selectedNodeData.children.length})</p>
+                      <div className="space-y-2 max-h-32 overflow-y-auto pr-2 text-xs">
                         {selectedNodeData.children.map((childId) => (
-                           // Find child data within the current nodes state for display name (optional)
-                           // For now, just show ID
-                            <div key={childId} className="bg-gray-100 p-1.5 rounded border border-gray-200 truncate" title={childId}>
-                               {childId}
-                            </div>
+                          <div 
+                            key={childId} 
+                            className="bg-[#f8fafc] p-2 rounded-lg border border-[#2563eb]/20 text-[#334155] truncate hover:bg-[#2563eb]/5 transition-colors" 
+                            title={childId}
+                          >
+                            {childId}
+                          </div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
-                  <div><p className="text-xs font-medium text-gray-500">Last Update</p><p className="text-gray-800">2025-10-24 14:32</p></div>
+
+                  {/* Last Update */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.3 }}
+                  >
+                    <p className="text-xs font-medium text-[#64748b]">Last Update</p>
+                    <p className="text-[#334155]">2025-10-24 14:32</p>
+                  </motion.div>
                 </div>
-              </>
+              </motion.div>
             ) : (
-                <p className="text-sm text-gray-500">Click on a node in the diagram to view details.</p>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="text-sm text-[#64748b]"
+              >
+                Click on a node in the diagram to view details.
+              </motion.p>
             )}
-    
             
-            {/* Legend (using simpler divs) */}
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-4 text-xs text-gray-500">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#3B82F6]"></span>Headend</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#60A5FA]"></span>FDH</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#93C5FD]"></span>Splitter</span>
-                {/* Add ONT legend if needed */}
-            </div>
+            {/* Legend */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
+              className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-6 text-xs text-[#64748b] pt-4 border-t border-gray-100"
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-lg bg-[#2563eb]"></span>Headend
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-lg bg-[#2563eb]/80"></span>FDH
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-lg bg-[#2563eb]/60"></span>Splitter
+              </span>
+            </motion.div>
           </div>
-        </div>
-
-
+        </motion.div>
       </div>
     </div>
   );

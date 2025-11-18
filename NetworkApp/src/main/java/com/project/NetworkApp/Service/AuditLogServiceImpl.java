@@ -7,6 +7,9 @@ import com.project.NetworkApp.entity.AuditLog;
 import com.project.NetworkApp.entity.User;
 import com.project.NetworkApp.Repository.AuditLogRepository; // Create this repository
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -16,8 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,11 @@ public class AuditLogServiceImpl implements AuditLogService {
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
     private final Map<Integer, String> usernameCache = new ConcurrentHashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(AuditLogServiceImpl.class);
+    private final ApplicationContext context;
+
+
+
 
     @Override
     // Run in a new transaction so logging succeeds even if the main action fails later
@@ -40,7 +47,7 @@ public class AuditLogServiceImpl implements AuditLogService {
             auditLogRepository.save(logEntry);
         } catch (Exception e) {
             // Log the error but don't let it stop the main operation
-            System.err.println("!!! Failed to save audit log: " + e.getMessage());
+            log.warn("!!! Failed to save audit log:{} " , e.getMessage());
             // Consider using a proper logger here (like SLF4j)
         }
     }
@@ -48,7 +55,8 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logAction(String actionType, String description, User user) {
-        logAction(actionType, description, (user != null ? user.getId() : null));
+        AuditLogService proxy = context.getBean(AuditLogService.class);
+        proxy.logAction(actionType, description, (user != null ? user.getId() : null));
     }
 
     @Override
@@ -58,15 +66,11 @@ public class AuditLogServiceImpl implements AuditLogService {
         List<AuditLog> logs = auditLogRepository.findAll(Sort.by(Sort.Direction.DESC, "timestamp"));
 
         // Create a function to find usernames (using cache)
-        Function<Integer, String> usernameFinder = userId -> usernameCache.computeIfAbsent(userId, id ->
-                userRepository.findById(id)
-                        .map(User::getUsername)
-                        .orElse("ID:" + id) // Fallback if user deleted/not found
-        );
+
 
         // Map entities to DTOs, passing the userRepository to the utility
         return logs.stream()
-                .map(log -> AuditLogUtility.toDTO(log, userRepository)) // <-- Pass repository
-                .collect(Collectors.toList());
+                .map(loge -> AuditLogUtility.toDTO(loge, userRepository)) // <-- Pass repository
+                .toList();
     }
 }

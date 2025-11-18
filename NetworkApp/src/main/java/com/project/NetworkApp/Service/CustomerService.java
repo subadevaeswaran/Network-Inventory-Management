@@ -1,6 +1,6 @@
 package com.project.NetworkApp.Service;
 
-// package com.example.inventory.service;
+
 
 
 import com.project.NetworkApp.DTO.CustomerDTO;
